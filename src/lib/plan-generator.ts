@@ -326,10 +326,11 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
       remainingDistance -= qualitySession.distanceKm || 0;
       qualityAdded++;
     } else {
-      const easyDist = Math.min(
-        Math.round(remainingDistance / Math.max(1, otherRunDays.length - sessions.length + 1) * 10) / 10,
-        remainingDistance
-      );
+      // Cap per-run distance: recovery max 6km, easy max 12km
+      const maxRunDist = recovery ? 6 : 12;
+      const remainingSlots = Math.max(1, otherRunDays.length - sessions.length + 1);
+      const idealDist = Math.round(remainingDistance / remainingSlots * 10) / 10;
+      const easyDist = Math.min(idealDist, maxRunDist, remainingDistance);
       if (easyDist < 2) continue;
       sessions.push({
         dayOfWeek: day,
@@ -338,14 +339,14 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
         description: recovery
           ? 'Very easy effort. Focus on form and staying relaxed.'
           : 'Conversational pace. Building aerobic fitness.',
-        distanceKm: easyDist,
+        distanceKm: Math.round(easyDist * 10) / 10,
         targetPaceMinKm: recovery ? paces.recovery : paces.easy,
         targetHrZone: recovery ? 1 : 2,
         durationMinutes: null,
         structure: {
           blocks: [
             { type: 'warmup', description: '5min walk/easy jog', duration_minutes: 5 },
-            { type: 'main', description: `${recovery ? 'Recovery' : 'Easy'} run at ${formatPace(recovery ? paces.recovery : paces.easy)}/km`, distance_km: Math.max(0, easyDist - 1), target_pace_min_km: recovery ? paces.recovery : paces.easy, target_hr_zone: recovery ? 1 : 2 },
+            { type: 'main', description: `${recovery ? 'Recovery' : 'Easy'} run at ${formatPace(recovery ? paces.recovery : paces.easy)}/km`, distance_km: Math.round(Math.max(0, easyDist - 1) * 10) / 10, target_pace_min_km: recovery ? paces.recovery : paces.easy, target_hr_zone: recovery ? 1 : 2 },
             { type: 'cooldown', description: '5min walk + stretching', duration_minutes: 5 },
           ],
         },
