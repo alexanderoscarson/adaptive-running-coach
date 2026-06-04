@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -40,14 +39,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-muted">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">RunCoach AI</CardTitle>
-          <CardDescription>Your adaptive AI running coach</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Left — image */}
+      <div className="hidden md:block md:w-1/2 relative">
+        <img
+          src="https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=1200&q=80&auto=format"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/30" />
+        <div className="absolute bottom-12 left-12 right-12">
+          <h2 className="text-white text-3xl font-bold drop-shadow-lg">Your best run is ahead of you.</h2>
+        </div>
+      </div>
+
+      {/* Right — form */}
+      <div className="flex-1 flex items-center justify-center p-6 md:p-12">
+        <div className="w-full max-w-sm space-y-8">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+            <p className="text-muted-foreground mt-1">Sign in to your RunCoach AI account</p>
+          </div>
+
+          <Button variant="outline" className="w-full h-11 rounded-xl" onClick={handleGoogleLogin}>
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -60,31 +74,31 @@ export default function LoginPage() {
           <div className="relative">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or</span>
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
             </div>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-3">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 h-11 rounded-xl" />
             </div>
             <div>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 h-11 rounded-xl" />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-11 rounded-xl font-semibold" disabled={loading}>
               {loading ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
             No account?{' '}
-            <a href="/auth/signup" className="text-primary hover:underline">Sign up</a>
+            <a href="/auth/signup" className="text-primary font-medium hover:underline">Sign up free</a>
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

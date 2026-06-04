@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Search, MapPin, Calendar, Trophy, X } from 'lucide-react';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_VALUES = [1, 2, 3, 4, 5, 6, 0];
@@ -27,7 +27,27 @@ const ACTIVITIES = [
   { value: 'generic_strength', label: 'Gym/Strength', emoji: '🏋️' },
 ];
 
+const STEP_IMAGES = [
+  'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800&q=80&auto=format', // about you
+  'https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?w=800&q=80&auto=format', // goal
+  'https://images.unsplash.com/photo-1486218119243-13883505764c?w=800&q=80&auto=format', // fitness
+  'https://images.unsplash.com/photo-1461896836934-bd45ba8fcf9b?w=800&q=80&auto=format', // volume
+  'https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&q=80&auto=format', // days
+  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80&auto=format', // strength
+  'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800&q=80&auto=format', // activities
+  'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&q=80&auto=format', // ready
+];
+
 const TOTAL_STEPS = 8;
+
+interface Race {
+  id: string;
+  name: string;
+  location: string;
+  country: string;
+  date: string;
+  distance: string;
+}
 
 function timeToSeconds(time: string): number | null {
   if (!time) return null;
@@ -39,17 +59,22 @@ function timeToSeconds(time: string): number | null {
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
+  // Form state
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
   const [goalType, setGoalType] = useState('race');
   const [raceDistance, setRaceDistance] = useState('half_marathon');
   const [targetTime, setTargetTime] = useState('');
   const [raceDate, setRaceDate] = useState('');
+  const [selectedRace, setSelectedRace] = useState<Race | null>(null);
+  const [raceQuery, setRaceQuery] = useState('');
+  const [raceResults, setRaceResults] = useState<Race[]>([]);
+  const [raceSearchOpen, setRaceSearchOpen] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [baseline5k, setBaseline5k] = useState('');
   const [baseline10k, setBaseline10k] = useState('');
   const [baselineHalf, setBaselineHalf] = useState('');
@@ -75,6 +100,40 @@ export default function OnboardingPage() {
     }
     loadProgress();
   }, []);
+
+  // Race search with debounce
+  const searchRaces = useCallback(async (query: string, distance: string) => {
+    if (query.length < 2 && !distance) return;
+    setSearchLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (query) params.set('q', query);
+      if (distance) params.set('distance', distance);
+      const res = await fetch(`/api/races?${params}`);
+      const data = await res.json();
+      setRaceResults(data);
+    } catch {
+      setRaceResults([]);
+    }
+    setSearchLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (raceSearchOpen) {
+        searchRaces(raceQuery, raceDistance);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [raceQuery, raceDistance, raceSearchOpen, searchRaces]);
+
+  function selectRace(race: Race) {
+    setSelectedRace(race);
+    setRaceDate(race.date);
+    setRaceDistance(race.distance as typeof raceDistance);
+    setRaceSearchOpen(false);
+    setRaceQuery('');
+  }
 
   async function saveProgress(newStep: number) {
     const { data: { user } } = await supabase.auth.getUser();
@@ -158,276 +217,427 @@ export default function OnboardingPage() {
   const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted flex flex-col">
-      <div className="p-4 max-w-lg mx-auto w-full">
-        <Progress value={progress} className="h-1.5 mb-6" />
-        <p className="text-xs text-muted-foreground text-center mb-4">Step {step + 1} of {TOTAL_STEPS}</p>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Left side — inspirational image (hidden on mobile, shown on desktop) */}
+      <div className="hidden md:block md:w-1/2 lg:w-[45%] relative">
+        <img
+          src={STEP_IMAGES[step]}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20" />
+        <div className="absolute bottom-8 left-8 right-8">
+          <div className="bg-background/80 backdrop-blur-sm rounded-2xl p-5">
+            <p className="text-sm font-medium">Step {step + 1} of {TOTAL_STEPS}</p>
+            <Progress value={progress} className="h-1.5 mt-2" />
+          </div>
+        </div>
       </div>
 
-      <div className="flex-1 flex items-start justify-center px-4 pb-24">
-        <Card className="w-full max-w-lg">
-          {step === 0 && (
-            <>
-              <CardHeader>
-                <CardTitle>About you</CardTitle>
-                <CardDescription>Help us personalize your training zones</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Age</Label>
-                  <Input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="30" />
-                </div>
-                <div>
-                  <Label>Gender</Label>
-                  <div className="flex gap-2 mt-1">
-                    {[{ v: 'male', l: 'Male' }, { v: 'female', l: 'Female' }, { v: 'non_binary', l: 'Non-binary' }, { v: 'prefer_not_to_say', l: 'Skip' }].map(g => (
-                      <Button key={g.v} variant={gender === g.v ? 'default' : 'outline'} size="sm" onClick={() => setGender(g.v)}>{g.l}</Button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <Label>Max Heart Rate (optional)</Label>
-                  <Input type="number" value={maxHr} onChange={e => setMaxHr(e.target.value)} placeholder="185" />
-                </div>
-                <div>
-                  <Label>Resting Heart Rate (optional)</Label>
-                  <Input type="number" value={restingHr} onChange={e => setRestingHr(e.target.value)} placeholder="55" />
-                </div>
-              </CardContent>
-            </>
-          )}
+      {/* Right side — form */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Mobile progress bar */}
+        <div className="md:hidden p-4 pb-0">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground font-medium">Step {step + 1} of {TOTAL_STEPS}</span>
+            <span className="text-xs text-primary font-semibold">{Math.round(progress)}%</span>
+          </div>
+          <Progress value={progress} className="h-1.5" />
+        </div>
 
-          {step === 1 && (
-            <>
-              <CardHeader>
-                <CardTitle>Your goal</CardTitle>
-                <CardDescription>What are you training for?</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  {[{ v: 'race', l: 'Race' }, { v: 'target_time', l: 'Target time' }, { v: 'just_improve', l: 'Just improve' }].map(g => (
-                    <Button key={g.v} variant={goalType === g.v ? 'default' : 'outline'} size="sm" onClick={() => setGoalType(g.v)} className="flex-1">{g.l}</Button>
-                  ))}
+        {/* Mobile image strip */}
+        <div className="md:hidden h-32 relative mx-4 mt-4 rounded-2xl overflow-hidden">
+          <img src={STEP_IMAGES[step]} alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+        </div>
+
+        <div className="flex-1 flex items-start justify-center px-4 py-6 md:py-12 md:px-12 lg:px-16">
+          <div className="w-full max-w-md">
+            {/* Step 0 — About You */}
+            {step === 0 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">About you</h1>
+                  <p className="text-muted-foreground mt-1">Help us personalize your training zones</p>
                 </div>
-                {goalType !== 'just_improve' && (
+                <div className="space-y-4">
                   <div>
-                    <Label>Race distance</Label>
-                    <div className="flex gap-2 mt-1 flex-wrap">
-                      {[{ v: '5k', l: '5K' }, { v: '10k', l: '10K' }, { v: 'half_marathon', l: 'Half Marathon' }, { v: 'marathon', l: 'Marathon' }].map(d => (
-                        <Button key={d.v} variant={raceDistance === d.v ? 'default' : 'outline'} size="sm" onClick={() => setRaceDistance(d.v)}>{d.l}</Button>
+                    <Label className="text-sm font-medium">Age</Label>
+                    <Input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="30" className="mt-1 h-11 rounded-xl" />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Gender</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {[{ v: 'male', l: 'Male' }, { v: 'female', l: 'Female' }, { v: 'non_binary', l: 'Non-binary' }, { v: 'prefer_not_to_say', l: 'Prefer not to say' }].map(g => (
+                        <button key={g.v} onClick={() => setGender(g.v)} className={cn(
+                          'py-2.5 px-3 rounded-xl border text-sm font-medium transition-all',
+                          gender === g.v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
+                        )}>{g.l}</button>
                       ))}
                     </div>
                   </div>
-                )}
-                {goalType === 'target_time' && (
-                  <div>
-                    <Label>Target time (HH:MM:SS)</Label>
-                    <Input value={targetTime} onChange={e => setTargetTime(e.target.value)} placeholder="1:45:00" />
-                  </div>
-                )}
-                {goalType === 'race' && (
-                  <div>
-                    <Label>Race date</Label>
-                    <Input type="date" value={raceDate} onChange={e => setRaceDate(e.target.value)} />
-                  </div>
-                )}
-              </CardContent>
-            </>
-          )}
-
-          {step === 2 && (
-            <>
-              <CardHeader>
-                <CardTitle>Current fitness</CardTitle>
-                <CardDescription>Share any recent race or time trial results (MM:SS or HH:MM:SS)</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <Label>5K time</Label>
-                  <Input value={baseline5k} onChange={e => setBaseline5k(e.target.value)} placeholder="25:00" />
-                </div>
-                <div>
-                  <Label>10K time</Label>
-                  <Input value={baseline10k} onChange={e => setBaseline10k(e.target.value)} placeholder="52:00" />
-                </div>
-                <div>
-                  <Label>Half Marathon time</Label>
-                  <Input value={baselineHalf} onChange={e => setBaselineHalf(e.target.value)} placeholder="1:55:00" />
-                </div>
-                <div>
-                  <Label>Marathon time</Label>
-                  <Input value={baselineMarathon} onChange={e => setBaselineMarathon(e.target.value)} placeholder="4:10:00" />
-                </div>
-                <p className="text-xs text-muted-foreground">Fill in whichever you have — even one helps us calibrate your paces.</p>
-              </CardContent>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <CardHeader>
-                <CardTitle>Current volume</CardTitle>
-                <CardDescription>How much are you running right now?</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Weekly mileage (km)</Label>
-                  <Input type="number" value={weeklyMileage} onChange={e => setWeeklyMileage(e.target.value)} placeholder="20" />
-                </div>
-                <div>
-                  <Label>Runs per week</Label>
-                  <div className="flex gap-2 mt-1">
-                    {[2, 3, 4, 5, 6].map(n => (
-                      <Button key={n} variant={runsPerWeek === String(n) ? 'default' : 'outline'} size="sm" onClick={() => setRunsPerWeek(String(n))} className="w-12">{n}</Button>
-                    ))}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm font-medium">Max HR <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                      <Input type="number" value={maxHr} onChange={e => setMaxHr(e.target.value)} placeholder="185" className="mt-1 h-11 rounded-xl" />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Resting HR <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                      <Input type="number" value={restingHr} onChange={e => setRestingHr(e.target.value)} placeholder="55" className="mt-1 h-11 rounded-xl" />
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </>
-          )}
+              </div>
+            )}
 
-          {step === 4 && (
-            <>
-              <CardHeader>
-                <CardTitle>Available days</CardTitle>
-                <CardDescription>Which days can you run?</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2 flex-wrap">
-                  {DAYS.map((d, i) => (
-                    <Button
-                      key={d}
-                      variant={availableDays.includes(DAY_VALUES[i]) ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => toggleDay(DAY_VALUES[i])}
-                      className="w-14"
-                    >
-                      {d}
-                    </Button>
-                  ))}
-                </div>
+            {/* Step 1 — Goal with Race Search */}
+            {step === 1 && (
+              <div className="space-y-6">
                 <div>
-                  <Label>Preferred long run day</Label>
-                  <div className="flex gap-2 mt-1 flex-wrap">
-                    {DAYS.map((d, i) => (
-                      <Button
-                        key={d}
-                        variant={longRunDay === DAY_VALUES[i] ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setLongRunDay(DAY_VALUES[i])}
-                        className="w-14"
-                        disabled={!availableDays.includes(DAY_VALUES[i])}
-                      >
-                        {d}
-                      </Button>
-                    ))}
-                  </div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Your goal</h1>
+                  <p className="text-muted-foreground mt-1">What are you training for?</p>
                 </div>
-              </CardContent>
-            </>
-          )}
 
-          {step === 5 && (
-            <>
-              <CardHeader>
-                <CardTitle>Strength training</CardTitle>
-                <CardDescription>How much strength work do you want in your plan?</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {[
-                    { v: 'none', l: 'None', d: 'No strength work in the plan' },
-                    { v: 'light', l: 'Light', d: 'Bodyweight circuits, 20 min' },
-                    { v: 'moderate', l: 'Moderate', d: 'Runner-specific strength, 30 min' },
-                    { v: 'heavy', l: 'Heavy', d: 'Compound lifts + plyometrics, 45 min' },
-                  ].map(s => (
-                    <button
-                      key={s.v}
-                      onClick={() => setStrengthPref(s.v)}
-                      className={cn(
-                        'w-full text-left p-3 rounded-lg border transition-colors',
-                        strengthPref === s.v ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'
-                      )}
-                    >
-                      <div className="font-medium text-sm">{s.l}</div>
-                      <div className="text-xs text-muted-foreground">{s.d}</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[{ v: 'race', l: 'Race', icon: '🏁' }, { v: 'target_time', l: 'Target time', icon: '⏱️' }, { v: 'just_improve', l: 'Just improve', icon: '📈' }].map(g => (
+                    <button key={g.v} onClick={() => setGoalType(g.v)} className={cn(
+                      'py-3 px-2 rounded-xl border text-center transition-all',
+                      goalType === g.v ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
+                    )}>
+                      <div className="text-2xl mb-1">{g.icon}</div>
+                      <div className="text-xs font-medium">{g.l}</div>
                     </button>
                   ))}
                 </div>
-              </CardContent>
-            </>
-          )}
 
-          {step === 6 && (
-            <>
-              <CardHeader>
-                <CardTitle>Other activities</CardTitle>
-                <CardDescription>Add recurring activities so we plan around them</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {goalType !== 'just_improve' && (
+                  <>
+                    <div>
+                      <Label className="text-sm font-medium">Race distance</Label>
+                      <div className="grid grid-cols-4 gap-2 mt-1">
+                        {[{ v: '5k', l: '5K' }, { v: '10k', l: '10K' }, { v: 'half_marathon', l: 'Half' }, { v: 'marathon', l: 'Marathon' }].map(d => (
+                          <button key={d.v} onClick={() => { setRaceDistance(d.v); setSelectedRace(null); }} className={cn(
+                            'py-2.5 rounded-xl border text-sm font-medium transition-all',
+                            raceDistance === d.v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
+                          )}>{d.l}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Race Search */}
+                    <div>
+                      <Label className="text-sm font-medium">Find your race</Label>
+                      <div className="relative mt-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          value={raceQuery}
+                          onChange={e => { setRaceQuery(e.target.value); setRaceSearchOpen(true); }}
+                          onFocus={() => { setRaceSearchOpen(true); searchRaces(raceQuery, raceDistance); }}
+                          placeholder="Search races... e.g. Stockholm, Berlin, NYC"
+                          className="pl-10 h-11 rounded-xl"
+                        />
+                      </div>
+
+                      {/* Selected race card */}
+                      {selectedRace && (
+                        <Card className="mt-3 border-primary/30 bg-primary/5">
+                          <CardContent className="py-3 px-4 flex items-center gap-3">
+                            <Trophy className="h-5 w-5 text-primary shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate">{selectedRace.name}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <MapPin className="h-3 w-3" />
+                                <span>{selectedRace.location}</span>
+                                <Calendar className="h-3 w-3 ml-1" />
+                                <span>{new Date(selectedRace.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                              </div>
+                            </div>
+                            <button onClick={() => { setSelectedRace(null); setRaceDate(''); }} className="text-muted-foreground hover:text-foreground">
+                              <X className="h-4 w-4" />
+                            </button>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Race search results dropdown */}
+                      {raceSearchOpen && !selectedRace && (
+                        <div className="mt-2 rounded-xl border bg-card shadow-lg max-h-64 overflow-y-auto">
+                          {searchLoading ? (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                              <Loader2 className="h-4 w-4 animate-spin mx-auto mb-1" /> Searching…
+                            </div>
+                          ) : raceResults.length === 0 ? (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                              {raceQuery.length < 2 ? 'Type to search races worldwide' : 'No races found — try a different search'}
+                            </div>
+                          ) : (
+                            raceResults.map(race => (
+                              <button
+                                key={race.id}
+                                onClick={() => selectRace(race)}
+                                className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-b last:border-0"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                    <Trophy className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{race.name}</p>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <MapPin className="h-3 w-3" />
+                                      <span>{race.location}, {race.country}</span>
+                                      <span>·</span>
+                                      <span>{new Date(race.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    </div>
+                                  </div>
+                                  <Badge variant="secondary" className="text-[10px] shrink-0">{race.distance.replace('_', ' ')}</Badge>
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Manual date fallback */}
+                    {!selectedRace && (
+                      <div>
+                        <Label className="text-sm font-medium">Or enter a date manually</Label>
+                        <Input type="date" value={raceDate} onChange={e => setRaceDate(e.target.value)} className="mt-1 h-11 rounded-xl" />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {goalType === 'target_time' && (
+                  <div>
+                    <Label className="text-sm font-medium">Target time (HH:MM:SS)</Label>
+                    <Input value={targetTime} onChange={e => setTargetTime(e.target.value)} placeholder="1:45:00" className="mt-1 h-11 rounded-xl" />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 2 — Current Fitness */}
+            {step === 2 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Current fitness</h1>
+                  <p className="text-muted-foreground mt-1">Share any recent race or time trial results</p>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { label: '5K time', value: baseline5k, set: setBaseline5k, ph: '25:00' },
+                    { label: '10K time', value: baseline10k, set: setBaseline10k, ph: '52:00' },
+                    { label: 'Half Marathon time', value: baselineHalf, set: setBaselineHalf, ph: '1:55:00' },
+                    { label: 'Marathon time', value: baselineMarathon, set: setBaselineMarathon, ph: '4:10:00' },
+                  ].map(f => (
+                    <div key={f.label}>
+                      <Label className="text-sm font-medium">{f.label}</Label>
+                      <Input value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.ph} className="mt-1 h-11 rounded-xl" />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground bg-muted/50 rounded-xl p-3">
+                  Fill in whichever you have — even one helps us calibrate your training paces. Format: MM:SS or HH:MM:SS.
+                </p>
+              </div>
+            )}
+
+            {/* Step 3 — Current Volume */}
+            {step === 3 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Current volume</h1>
+                  <p className="text-muted-foreground mt-1">How much are you running right now?</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Weekly distance (km)</Label>
+                  <Input type="number" value={weeklyMileage} onChange={e => setWeeklyMileage(e.target.value)} placeholder="20" className="mt-1 h-11 rounded-xl" />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Runs per week</Label>
+                  <div className="flex gap-2 mt-2">
+                    {[2, 3, 4, 5, 6].map(n => (
+                      <button key={n} onClick={() => setRunsPerWeek(String(n))} className={cn(
+                        'flex-1 py-3 rounded-xl border text-lg font-semibold transition-all',
+                        runsPerWeek === String(n) ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
+                      )}>{n}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4 — Available Days */}
+            {step === 4 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Your schedule</h1>
+                  <p className="text-muted-foreground mt-1">Which days can you run?</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Available days</Label>
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {DAYS.map((d, i) => (
+                      <button key={d} onClick={() => toggleDay(DAY_VALUES[i])} className={cn(
+                        'py-3 rounded-xl border text-sm font-medium transition-all',
+                        availableDays.includes(DAY_VALUES[i]) ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
+                      )}>{d}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Preferred long run day</Label>
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {DAYS.map((d, i) => (
+                      <button
+                        key={d}
+                        onClick={() => setLongRunDay(DAY_VALUES[i])}
+                        disabled={!availableDays.includes(DAY_VALUES[i])}
+                        className={cn(
+                          'py-3 rounded-xl border text-sm font-medium transition-all',
+                          longRunDay === DAY_VALUES[i] ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40',
+                          !availableDays.includes(DAY_VALUES[i]) && 'opacity-30 cursor-not-allowed'
+                        )}
+                      >{d}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5 — Strength */}
+            {step === 5 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Strength training</h1>
+                  <p className="text-muted-foreground mt-1">How much strength work in your plan?</p>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { v: 'none', l: 'None', d: 'Running only — no strength sessions', icon: '🚫' },
+                    { v: 'light', l: 'Light', d: 'Bodyweight circuits, 20 minutes', icon: '🧘' },
+                    { v: 'moderate', l: 'Moderate', d: 'Runner-specific strength, 30 minutes', icon: '💪' },
+                    { v: 'heavy', l: 'Heavy', d: 'Compound lifts + plyometrics, 45 minutes', icon: '🏋️' },
+                  ].map(s => (
+                    <button key={s.v} onClick={() => setStrengthPref(s.v)} className={cn(
+                      'w-full text-left p-4 rounded-xl border transition-all flex items-center gap-4',
+                      strengthPref === s.v ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
+                    )}>
+                      <span className="text-2xl">{s.icon}</span>
+                      <div>
+                        <div className="font-semibold text-sm">{s.l}</div>
+                        <div className="text-xs text-muted-foreground">{s.d}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 6 — Other Activities */}
+            {step === 6 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Other activities</h1>
+                  <p className="text-muted-foreground mt-1">We'll plan around your other commitments</p>
+                </div>
+                <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1">
                   {ACTIVITIES.map(act => (
                     <div key={act.value}>
-                      <div className="text-sm font-medium mb-1">{act.emoji} {act.label}</div>
-                      <div className="flex gap-1.5 flex-wrap">
+                      <div className="text-sm font-medium mb-1.5">{act.emoji} {act.label}</div>
+                      <div className="grid grid-cols-7 gap-1">
                         {DAYS.map((d, i) => {
                           const selected = activities.some(a => a.type === act.value && a.day === DAY_VALUES[i]);
                           return (
-                            <Badge
-                              key={d}
-                              variant={selected ? 'default' : 'outline'}
-                              className="cursor-pointer text-xs"
-                              onClick={() => toggleActivity(act.value, DAY_VALUES[i])}
-                            >
-                              {d}
-                            </Badge>
+                            <button key={d} onClick={() => toggleActivity(act.value, DAY_VALUES[i])} className={cn(
+                              'py-1.5 rounded-lg border text-xs font-medium transition-all',
+                              selected ? 'border-primary bg-primary/10 text-primary' : 'border-border/50 hover:border-primary/40 text-muted-foreground'
+                            )}>{d}</button>
                           );
                         })}
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-3">Tap days to mark when you do each activity. Skip this if you only run.</p>
-              </CardContent>
-            </>
-          )}
+                <p className="text-xs text-muted-foreground bg-muted/50 rounded-xl p-3">
+                  Tap days for each activity. Skip entirely if you only run.
+                </p>
+              </div>
+            )}
 
-          {step === 7 && (
-            <>
-              <CardHeader>
-                <CardTitle>Ready to go!</CardTitle>
-                <CardDescription>We'll generate your personalized {raceDistance.replace('_', ' ')} training plan</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-lg bg-muted p-4 space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Goal</span><span>{goalType === 'race' ? `${raceDistance.replace('_', ' ')} race` : goalType === 'target_time' ? `${raceDistance.replace('_', ' ')} in ${targetTime}` : 'General improvement'}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Weekly volume</span><span>{weeklyMileage}km / {runsPerWeek} runs</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Plan length</span><span>17 weeks</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Strength</span><span className="capitalize">{strengthPref}</span></div>
+            {/* Step 7 — Summary & Generate */}
+            {step === 7 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">You're all set!</h1>
+                  <p className="text-muted-foreground mt-1">Here's your training plan summary</p>
+                </div>
+
+                <div className="rounded-2xl bg-card border p-5 space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Goal</span>
+                    <span className="font-medium">
+                      {selectedRace ? selectedRace.name : goalType === 'just_improve' ? 'General improvement' : `${raceDistance.replace('_', ' ')} ${goalType}`}
+                    </span>
+                  </div>
+                  {raceDate && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Race date</span>
+                      <span className="font-medium">{new Date(raceDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Current volume</span>
+                    <span className="font-medium">{weeklyMileage}km / {runsPerWeek} runs per week</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Plan length</span>
+                    <span className="font-medium">17 weeks</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Strength</span>
+                    <span className="font-medium capitalize">{strengthPref}</span>
+                  </div>
                   {activities.length > 0 && (
-                    <div className="flex justify-between"><span className="text-muted-foreground">Other activities</span><span>{activities.length} scheduled</span></div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Other activities</span>
+                      <span className="font-medium">{activities.length} scheduled</span>
+                    </div>
                   )}
                 </div>
-                <Button className="w-full" size="lg" onClick={handleFinish} disabled={generating}>
-                  {generating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating your plan…</> : 'Generate my plan'}
-                </Button>
-              </CardContent>
-            </>
-          )}
 
-          <div className="flex justify-between p-4 pt-0">
-            {step > 0 ? (
-              <Button variant="ghost" size="sm" onClick={prev}>
-                <ChevronLeft className="h-4 w-4 mr-1" /> Back
-              </Button>
-            ) : <div />}
-            {step < TOTAL_STEPS - 1 && (
-              <Button size="sm" onClick={next}>
-                Next <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+                <Button className="w-full h-12 rounded-xl text-base font-semibold" size="lg" onClick={handleFinish} disabled={generating}>
+                  {generating ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Generating your plan…
+                    </>
+                  ) : (
+                    <>
+                      Generate my plan <ChevronRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
+
+            {/* Navigation */}
+            <div className="flex justify-between pt-6">
+              {step > 0 ? (
+                <Button variant="ghost" onClick={prev} className="rounded-xl">
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Back
+                </Button>
+              ) : <div />}
+              {step < TOTAL_STEPS - 1 && (
+                <Button onClick={next} className="rounded-xl">
+                  Next <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              )}
+            </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
