@@ -40,16 +40,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Left — image */}
-      <div className="hidden md:block md:w-1/2 relative">
-        <img
-          src="https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=1200&q=80&auto=format"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/30" />
-        <div className="absolute bottom-12 left-12 right-12">
-          <h2 className="text-white text-3xl font-bold drop-shadow-lg">Your best run is ahead of you.</h2>
+      {/* Left — branded panel */}
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary to-orange-600 items-center justify-center p-12">
+        <div className="text-white max-w-sm">
+          <h2 className="text-5xl font-extrabold tracking-tight leading-tight">Your best run is ahead of you.</h2>
+          <p className="text-white/70 mt-4 text-lg">Personalized training that adapts to your life, powered by AI.</p>
         </div>
       </div>
 

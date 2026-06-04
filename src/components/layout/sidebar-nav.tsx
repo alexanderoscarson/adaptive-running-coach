@@ -18,10 +18,10 @@ export function SidebarNav() {
   const router = useRouter();
 
   return (
-    <aside className="hidden md:flex flex-col w-64 border-r bg-card h-screen sticky top-0">
-      <div className="p-6 border-b">
-        <h1 className="text-xl font-bold tracking-tight">RUN<span className="text-primary">.</span></h1>
-        <p className="text-xs text-muted-foreground mt-1">Adaptive training coach</p>
+    <aside className="hidden md:flex flex-col w-64 bg-sidebar text-sidebar-foreground h-screen sticky top-0">
+      <div className="p-6 border-b border-sidebar-border">
+        <h1 className="text-2xl font-extrabold tracking-tight">RUN<span className="text-primary">.</span></h1>
+        <p className="text-xs text-sidebar-foreground/50 font-medium mt-0.5">Adaptive training coach</p>
       </div>
       <nav className="flex-1 p-3 space-y-0.5">
         {NAV_ITEMS.map(item => {
@@ -31,10 +31,10 @@ export function SidebarNav() {
               key={item.href}
               onClick={() => router.push(item.href)}
               className={cn(
-                'flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
+                'flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-all text-left',
                 active
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                  : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent'
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -43,12 +43,6 @@ export function SidebarNav() {
           );
         })}
       </nav>
-      {/* Decorative footer */}
-      <div className="p-4 border-t">
-        <div className="rounded-xl bg-primary/5 p-3 text-center">
-          <p className="text-xs text-primary font-medium">Powered by Claude AI</p>
-        </div>
-      </div>
     </aside>
   );
 }

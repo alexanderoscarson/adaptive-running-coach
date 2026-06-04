@@ -41,16 +41,11 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Left — image */}
-      <div className="hidden md:block md:w-1/2 relative">
-        <img
-          src="https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=1200&q=80&auto=format"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/30" />
-        <div className="absolute bottom-12 left-12 right-12">
-          <h2 className="text-white text-3xl font-bold drop-shadow-lg">The hardest step is the first one. You're taking it now.</h2>
+      {/* Left — branded panel */}
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary to-orange-600 items-center justify-center p-12">
+        <div className="text-white max-w-sm">
+          <h2 className="text-5xl font-extrabold tracking-tight leading-tight">The hardest step is the first one.</h2>
+          <p className="text-white/70 mt-4 text-lg">You&apos;re taking it now. Set up takes 2 minutes.</p>
         </div>
       </div>
 

@@ -27,15 +27,15 @@ const ACTIVITIES = [
   { value: 'generic_strength', label: 'Gym/Strength', emoji: '🏋️' },
 ];
 
-const STEP_IMAGES = [
-  'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800&q=80&auto=format', // about you
-  'https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?w=800&q=80&auto=format', // goal
-  'https://images.unsplash.com/photo-1486218119243-13883505764c?w=800&q=80&auto=format', // fitness
-  'https://images.unsplash.com/photo-1461896836934-bd45ba8fcf9b?w=800&q=80&auto=format', // volume
-  'https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&q=80&auto=format', // days
-  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80&auto=format', // strength
-  'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800&q=80&auto=format', // activities
-  'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&q=80&auto=format', // ready
+const STEP_TITLES = [
+  { title: 'Let\'s get\nto know you', emoji: '👋' },
+  { title: 'Set your\ngoal', emoji: '🎯' },
+  { title: 'Where are\nyou now?', emoji: '📊' },
+  { title: 'Your weekly\nvolume', emoji: '📏' },
+  { title: 'Pick your\ndays', emoji: '📅' },
+  { title: 'Strength\ntraining', emoji: '💪' },
+  { title: 'Other\nactivities', emoji: '🎾' },
+  { title: 'Ready\nto go!', emoji: '🚀' },
 ];
 
 const TOTAL_STEPS = 8;
@@ -218,18 +218,19 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Left side — inspirational image (hidden on mobile, shown on desktop) */}
-      <div className="hidden md:block md:w-1/2 lg:w-[45%] relative">
-        <img
-          src={STEP_IMAGES[step]}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20" />
+      {/* Left side — branded gradient panel (desktop) */}
+      <div className="hidden md:flex md:w-1/2 lg:w-[45%] bg-gradient-to-br from-primary to-orange-600 items-center justify-center p-12 relative">
+        <div className="text-white text-center">
+          <div className="text-7xl mb-6">{STEP_TITLES[step].emoji}</div>
+          <h2 className="text-4xl font-extrabold tracking-tight leading-tight whitespace-pre-line">{STEP_TITLES[step].title}</h2>
+        </div>
         <div className="absolute bottom-8 left-8 right-8">
-          <div className="bg-background/80 backdrop-blur-sm rounded-2xl p-5">
-            <p className="text-sm font-medium">Step {step + 1} of {TOTAL_STEPS}</p>
-            <Progress value={progress} className="h-1.5 mt-2" />
+          <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4">
+            <div className="flex items-center justify-between text-white/80 text-sm font-bold mb-2">
+              <span>Step {step + 1} of {TOTAL_STEPS}</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <Progress value={progress} className="h-1.5" />
           </div>
         </div>
       </div>
@@ -245,10 +246,10 @@ export default function OnboardingPage() {
           <Progress value={progress} className="h-1.5" />
         </div>
 
-        {/* Mobile image strip */}
-        <div className="md:hidden h-32 relative mx-4 mt-4 rounded-2xl overflow-hidden">
-          <img src={STEP_IMAGES[step]} alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+        {/* Mobile gradient strip */}
+        <div className="md:hidden h-24 relative mx-4 mt-4 rounded-2xl overflow-hidden bg-gradient-to-r from-primary to-orange-600 flex items-center justify-center gap-3">
+          <span className="text-3xl">{STEP_TITLES[step].emoji}</span>
+          <span className="text-white font-extrabold text-lg">{STEP_TITLES[step].title.replace('\n', ' ')}</span>
         </div>
 
         <div className="flex-1 flex items-start justify-center px-4 py-6 md:py-12 md:px-12 lg:px-16">
