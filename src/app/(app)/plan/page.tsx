@@ -3,198 +3,328 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { format, parseISO, isThisWeek } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle2, Circle, Plane, RefreshCw, ChevronDown, ChevronRight, Target } from 'lucide-react';
+import { CheckCircle2, Circle, Plane, RefreshCw, Target, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { PlanIntent, Session, Goal } from '@/types/database';
+import type { PlanIntent, Session, Goal, Constraint } from '@/types/database';
 
-const PHASE_COLORS: Record<string, string> = {
-  base: 'text-green-600 bg-green-100 dark:bg-green-900/30',
-  build: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30',
-  peak: 'text-orange-600 bg-orange-100 dark:bg-orange-900/30',
-  taper: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30',
-  race: 'text-red-600 bg-red-100 dark:bg-red-900/30',
+const SESSION_COLORS: Record<string, string> = {
+  easy: 'bg-green-400',
+  long: 'bg-purple-500',
+  tempo: 'bg-orange-400',
+  intervals: 'bg-red-500',
+  hills: 'bg-amber-500',
+  recovery: 'bg-emerald-300',
+  strength: 'bg-blue-500',
+  cross_training: 'bg-cyan-500',
+  rest: 'bg-gray-300',
+  race: 'bg-yellow-400',
+  constraint_activity: 'bg-pink-400',
 };
 
-const WEEK_STATE_ICONS: Record<string, React.ReactNode> = {
-  completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
-  current: <Circle className="h-4 w-4 text-primary fill-primary" />,
-  planned: <Circle className="h-4 w-4 text-muted-foreground" />,
-  adapted: <RefreshCw className="h-4 w-4 text-amber-500" />,
-  vacation: <Plane className="h-4 w-4 text-sky-500" />,
-  recovery: <RefreshCw className="h-4 w-4 text-emerald-500" />,
+const PHASE_COLORS: Record<string, string> = {
+  base: 'text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/40',
+  build: 'text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/40',
+  peak: 'text-orange-700 bg-orange-100 dark:text-orange-300 dark:bg-orange-900/40',
+  taper: 'text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-900/40',
+  race: 'text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/40',
+};
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const ACTIVITY_LABELS: Record<string, string> = {
+  tennis: 'Tennis', padel: 'Padel', cycling: 'Cycling', swimming: 'Swimming',
+  hiking: 'Hiking', skiing: 'Skiing', climbing: 'Climbing',
+  generic_cardio: 'Cardio', generic_strength: 'Gym',
 };
 
 export default function PlanPage() {
   const [intents, setIntents] = useState<PlanIntent[]>([]);
   const [sessions, setSessions] = useState<Record<number, Session[]>>({});
+  const [constraints, setConstraints] = useState<Constraint[]>([]);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/auth/login'); return; }
 
-    const [intentsRes, goalRes] = await Promise.all([
+    const [intentsRes, goalRes, constraintsRes] = await Promise.all([
       supabase.from('plan_intents').select('*').eq('user_id', user.id).order('week_number'),
       supabase.from('goals').select('*').eq('user_id', user.id).eq('active', true).single(),
+      supabase.from('constraints').select('*').eq('user_id', user.id).eq('active', true),
     ]);
 
     setIntents(intentsRes.data || []);
     setGoal(goalRes.data);
+    setConstraints(constraintsRes.data || []);
 
     const currentWeek = (intentsRes.data || []).find(i => i.week_state === 'current');
     if (currentWeek) {
       setExpandedWeek(currentWeek.week_number);
       loadWeekSessions(user.id, currentWeek.week_number);
     }
-
     setLoading(false);
   }
 
   async function loadWeekSessions(userId: string, weekNumber: number) {
-    const { data } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('week_number', weekNumber)
-      .order('session_date')
-      .order('order_in_day');
-
+    const { data } = await supabase.from('sessions').select('*').eq('user_id', userId).eq('week_number', weekNumber).order('session_date').order('order_in_day');
     setSessions(prev => ({ ...prev, [weekNumber]: data || [] }));
   }
 
   async function toggleWeek(weekNumber: number) {
-    if (expandedWeek === weekNumber) {
-      setExpandedWeek(null);
-      return;
-    }
+    if (expandedWeek === weekNumber) { setExpandedWeek(null); return; }
     setExpandedWeek(weekNumber);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user && !sessions[weekNumber]) {
-      loadWeekSessions(user.id, weekNumber);
+    if (user && !sessions[weekNumber]) loadWeekSessions(user.id, weekNumber);
+  }
+
+  async function toggleSessionComplete(sessionId: string, currentStatus: string) {
+    const newStatus = currentStatus === 'completed' ? 'planned' : 'completed';
+    await fetch('/api/sessions', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, status: newStatus }),
+    });
+    // Update local state
+    setSessions(prev => {
+      const updated = { ...prev };
+      for (const week in updated) {
+        updated[week] = updated[week].map(s =>
+          s.id === sessionId ? { ...s, status: newStatus } : s
+        );
+      }
+      return updated;
+    });
+  }
+
+  // Merge constraint activities into a week's sessions for display
+  function getWeekDisplay(weekSessions: Session[]) {
+    const recurringConstraints = constraints.filter(c => c.type === 'recurring_activity');
+    const displayItems: Array<{
+      id: string;
+      day: number;
+      dayName: string;
+      title: string;
+      subtitle: string;
+      color: string;
+      isSession: boolean;
+      status: string;
+      sessionId?: string;
+    }> = [];
+
+    // Add running/strength sessions
+    for (const s of weekSessions) {
+      displayItems.push({
+        id: s.id,
+        day: s.day_of_week,
+        dayName: DAY_NAMES[s.day_of_week] || '?',
+        title: s.title,
+        subtitle: s.distance_km ? `${s.distance_km}km` : s.duration_minutes ? `${s.duration_minutes}m` : '',
+        color: SESSION_COLORS[s.type] || SESSION_COLORS.easy,
+        isSession: true,
+        status: s.status,
+        sessionId: s.id,
+      });
     }
+
+    // Add constraint activities (tennis, padel, etc.)
+    for (const c of recurringConstraints) {
+      if (c.day_of_week == null) continue;
+      // Don't duplicate if there's already a cross_training session on that day
+      const alreadyHas = displayItems.some(d => d.day === c.day_of_week && !d.isSession);
+      if (alreadyHas) continue;
+      displayItems.push({
+        id: `constraint-${c.id}`,
+        day: c.day_of_week,
+        dayName: DAY_NAMES[c.day_of_week] || '?',
+        title: ACTIVITY_LABELS[c.activity_type || ''] || c.activity_type || 'Activity',
+        subtitle: '',
+        color: SESSION_COLORS.constraint_activity,
+        isSession: false,
+        status: 'planned',
+      });
+    }
+
+    // Sort by day
+    displayItems.sort((a, b) => {
+      const dayA = a.day === 0 ? 7 : a.day;
+      const dayB = b.day === 0 ? 7 : b.day;
+      return dayA - dayB;
+    });
+
+    return displayItems;
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse text-muted-foreground">Loading plan…</div>
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-screen"><div className="animate-pulse text-muted-foreground">Loading plan…</div></div>;
   }
 
   const distanceName = goal?.race_distance?.replace('_', ' ') || 'training';
-  const raceDate = goal?.race_date ? format(parseISO(goal.race_date), 'MMM d, yyyy') : null;
+  const raceDate = goal?.race_date ? format(parseISO(goal.race_date), 'dd MMM yyyy').toUpperCase() : null;
   const totalWeeks = intents.length;
   const completedWeeks = intents.filter(i => i.week_state === 'completed').length;
+  const totalDistance = intents.reduce((sum, i) => sum + Number(i.total_distance_km), 0);
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
+    <div className="max-w-lg mx-auto px-4 pt-6 space-y-5 pb-8">
+      <h1 className="text-2xl font-bold text-center">Your Plan</h1>
+
+      {/* Goal banner — Runna style */}
       {goal && (
-        <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-          <CardContent className="py-4 px-4">
-            <div className="flex items-center gap-3">
-              <Target className="h-8 w-8 text-primary" />
+        <Card className="bg-gradient-to-br from-primary/15 to-primary/5 border-primary/20">
+          <CardContent className="py-5 px-5">
+            <div className="flex items-start justify-between">
               <div>
-                <h2 className="font-bold text-lg capitalize">{distanceName}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {raceDate ? `Race day: ${raceDate}` : 'General improvement plan'}
-                  {goal.target_time_seconds ? ` · Target: ${Math.floor(goal.target_time_seconds / 3600)}h${Math.floor((goal.target_time_seconds % 3600) / 60).toString().padStart(2, '0')}m` : ''}
-                </p>
+                <h2 className="font-extrabold text-xl capitalize">{distanceName} Plan</h2>
+                {raceDate && <p className="text-sm text-muted-foreground mt-0.5">Your race: <span className="font-semibold text-foreground">{raceDate}</span></p>}
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center">
+                <Target className="h-7 w-7 text-primary" />
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-              <span>{completedWeeks}/{totalWeeks} weeks</span>
-              <div className="flex-1 h-1 bg-muted rounded-full">
-                <div className="h-1 bg-primary rounded-full" style={{ width: `${(completedWeeks / totalWeeks) * 100}%` }} />
+
+            {/* Week dots */}
+            <div className="flex gap-1 mt-4">
+              {intents.map(i => (
+                <div key={i.id} className={cn(
+                  'flex-1 h-1.5 rounded-full',
+                  i.week_state === 'completed' ? 'bg-primary' : 'bg-primary/20'
+                )} />
+              ))}
+            </div>
+
+            <div className="flex justify-between mt-3">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Total Weeks</p>
+                <p className="text-xl font-extrabold">{completedWeeks}/{totalWeeks}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground font-medium">Total Distance</p>
+                <p className="text-xl font-extrabold">{Math.round(totalDistance)} km</p>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
+      {/* Week cards */}
       <ScrollArea className="flex-1">
-        <div className="space-y-1.5">
+        <div className="space-y-3">
           {intents.map(intent => {
             const isExpanded = expandedWeek === intent.week_number;
             const isVacation = intent.week_state === 'vacation';
-            const weekSessions = sessions[intent.week_number] || [];
+            const isCurrent = intent.week_state === 'current';
+            const weekItems = sessions[intent.week_number] ? getWeekDisplay(sessions[intent.week_number]) : [];
+            const weekStart = format(parseISO(intent.starts_on), 'd MMM').toUpperCase();
+            const weekEndDate = new Date(intent.starts_on);
+            weekEndDate.setDate(weekEndDate.getDate() + 6);
+            const weekEnd = format(weekEndDate, 'd MMM').toUpperCase();
 
             return (
-              <div key={intent.id}>
-                <button
-                  onClick={() => toggleWeek(intent.week_number)}
-                  className={cn(
-                    'w-full text-left p-3 rounded-lg border transition-all',
-                    isVacation && 'border-dashed border-sky-300',
-                    intent.week_state === 'current' && 'border-primary bg-primary/5',
-                    intent.week_state === 'completed' && 'bg-muted/30',
-                    intent.week_state === 'adapted' && 'border-amber-300',
-                    !['current', 'completed', 'adapted'].includes(intent.week_state) && !isVacation && 'border-border hover:bg-muted/50'
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    {WEEK_STATE_ICONS[intent.week_state] || WEEK_STATE_ICONS.planned}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Week {intent.week_number}</span>
-                        <Badge variant="secondary" className={cn('text-[10px] px-1.5 py-0', PHASE_COLORS[intent.phase])}>
-                          {intent.phase}
-                        </Badge>
-                        {intent.is_recovery && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Recovery</Badge>}
-                        {isVacation && <Plane className="h-3 w-3 text-sky-500" />}
+              <Card
+                key={intent.id}
+                className={cn(
+                  'transition-all overflow-hidden',
+                  isCurrent && 'border-primary/40 shadow-sm',
+                  isVacation && 'border-dashed border-sky-300',
+                  intent.week_state === 'completed' && 'opacity-70'
+                )}
+              >
+                <button onClick={() => toggleWeek(intent.week_number)} className="w-full text-left">
+                  <CardContent className="py-4 px-5">
+                    {/* Date range */}
+                    <p className="text-xs font-bold text-primary tracking-wide">{weekStart} - {weekEnd}</p>
+
+                    {/* Week title + phase */}
+                    <div className="flex items-center gap-2 mt-1">
+                      <h3 className="text-lg font-extrabold">Week {intent.week_number}</h3>
+                      <Badge variant="secondary" className={cn('text-[10px] font-bold px-2 py-0', PHASE_COLORS[intent.phase])}>
+                        {intent.phase.toUpperCase()}
+                      </Badge>
+                      {intent.is_recovery && <Badge variant="outline" className="text-[10px] font-bold px-2 py-0">RECOVERY</Badge>}
+                      {isVacation && <Plane className="h-4 w-4 text-sky-500" />}
+                    </div>
+
+                    {/* Session progress bar segments */}
+                    {isExpanded && weekItems.length > 0 && (
+                      <div className="flex gap-1 mt-3">
+                        {weekItems.map(item => (
+                          <div key={item.id} className={cn(
+                            'flex-1 h-2 rounded-full',
+                            item.status === 'completed' ? item.color : 'bg-muted-foreground/15'
+                          )} />
+                        ))}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{intent.description}</p>
+                    )}
+
+                    {/* Summary stats */}
+                    <div className="flex gap-4 mt-2">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-bold text-foreground">{intent.total_distance_km}</span>km
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-bold text-foreground">{intent.quality_sessions}</span> quality
+                      </p>
                     </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-sm font-medium">{intent.total_distance_km}km</div>
-                      <div className="text-[10px] text-muted-foreground">{format(parseISO(intent.starts_on), 'MMM d')}</div>
-                    </div>
-                    {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                  </div>
-                  {intent.adaptation_reason && (
-                    <p className="text-xs text-amber-600 mt-1 pl-7">Adapted: {intent.adaptation_reason}</p>
-                  )}
+                  </CardContent>
                 </button>
 
+                {/* Expanded: session list */}
                 {isExpanded && (
-                  <div className="ml-7 mt-1 space-y-1 mb-2">
-                    {weekSessions.length === 0 ? (
-                      <p className="text-xs text-muted-foreground p-2">Loading sessions…</p>
+                  <div className="px-5 pb-4 space-y-1">
+                    {weekItems.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2">Loading sessions…</p>
                     ) : (
-                      weekSessions.map(s => (
+                      weekItems.map(item => (
                         <div
-                          key={s.id}
+                          key={item.id}
                           className={cn(
-                            'flex items-center gap-3 p-2 rounded-md text-sm',
-                            s.status === 'completed' && 'opacity-60'
+                            'flex items-center gap-3 py-2.5 px-1',
+                            item.status === 'completed' && 'opacity-60'
                           )}
                         >
-                          <span className="text-xs text-muted-foreground w-8">{format(parseISO(s.session_date), 'EEE')}</span>
+                          {/* Color dot */}
+                          <div className={cn('w-3 h-3 rounded-sm shrink-0', item.color)} />
+
+                          {/* Day */}
+                          <span className="text-xs font-bold w-8 text-muted-foreground">{item.dayName}</span>
+
+                          {/* Title + subtitle */}
                           <div className="flex-1 min-w-0">
-                            <span className="font-medium text-xs">{s.title}</span>
-                            {s.distance_km && <span className="text-xs text-muted-foreground ml-2">{s.distance_km}km</span>}
+                            <span className="text-sm font-bold">{item.title}</span>
+                            {item.subtitle && (
+                              <span className="text-sm text-muted-foreground ml-1.5">· {item.subtitle}</span>
+                            )}
                           </div>
-                          {s.status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
-                          {s.adaptation_reason && <RefreshCw className="h-3.5 w-3.5 text-amber-500" />}
+
+                          {/* Checkbox */}
+                          {item.isSession && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleSessionComplete(item.sessionId!, item.status); }}
+                              className="shrink-0 p-0.5"
+                            >
+                              {item.status === 'completed' ? (
+                                <CheckCircle2 className="h-5 w-5 text-primary" />
+                              ) : (
+                                <Circle className="h-5 w-5 text-muted-foreground/40 hover:text-primary/60 transition-colors" />
+                              )}
+                            </button>
+                          )}
                         </div>
                       ))
                     )}
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>
