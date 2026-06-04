@@ -4,7 +4,7 @@ import { ArrowRight, Brain, BarChart3, Calendar, Zap, CheckCircle2 } from 'lucid
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
-      {/* ===== HERO — Bold typography, no photo overlay ===== */}
+      {/* ===== HERO ===== */}
       <section className="px-6 pb-20 md:pb-28">
         <div className="max-w-5xl mx-auto">
           <nav className="flex items-center justify-between py-6">
@@ -15,7 +15,7 @@ export default function HomePage() {
           </nav>
 
           <div className="pt-12 md:pt-20 max-w-3xl">
-            <p className="text-primary font-bold text-sm tracking-widest uppercase mb-4">Adaptive AI coaching</p>
+            <p className="text-primary font-bold text-sm tracking-widest uppercase mb-4">Adaptive coaching</p>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[0.95]">
               Running<br />
               made <span className="text-primary">simple</span>
@@ -51,14 +51,14 @@ export default function HomePage() {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {[
-              { distance: '5K', weeks: '8–12 wks', gradient: 'from-emerald-500 to-emerald-600' },
-              { distance: '10K', weeks: '10–14 wks', gradient: 'from-blue-500 to-blue-600' },
-              { distance: '13.1', weeks: '12–17 wks', gradient: 'from-primary to-orange-600' },
-              { distance: '26.2', weeks: '16–20 wks', gradient: 'from-red-500 to-red-600' },
+              { distance: '5K', label: '5K', weeks: '8 to 12 weeks', gradient: 'from-emerald-500 to-emerald-600' },
+              { distance: '10K', label: '10K', weeks: '10 to 14 weeks', gradient: 'from-blue-500 to-blue-600' },
+              { distance: 'Half', label: 'Half Marathon', weeks: '12 to 17 weeks', gradient: 'from-primary to-orange-600' },
+              { distance: 'Marathon', label: 'Marathon', weeks: '16 to 20 weeks', gradient: 'from-red-500 to-red-600' },
             ].map(d => (
               <Link href="/auth/signup" key={d.distance} className={`rounded-2xl bg-gradient-to-br ${d.gradient} p-6 md:p-8 text-white hover:scale-[1.03] transition-transform shadow-lg`}>
-                <div className="text-4xl md:text-5xl font-extrabold">{d.distance}</div>
-                <div className="text-sm font-medium mt-1 opacity-80">{d.weeks}</div>
+                <div className="text-3xl md:text-4xl font-extrabold">{d.distance}</div>
+                <div className="text-xs font-medium mt-1 opacity-80">{d.weeks}</div>
               </Link>
             ))}
           </div>
@@ -73,12 +73,12 @@ export default function HomePage() {
             Everything a coach does
           </h2>
           <p className="text-muted-foreground text-lg max-w-lg mx-auto text-center mb-12">
-            Periodized plans, adaptive pacing, and real-time adjustments — powered by AI.
+            Periodized plans, adaptive pacing, and real time adjustments powered by AI.
           </p>
 
           <div className="grid md:grid-cols-2 gap-4 md:gap-6">
             {[
-              { icon: Calendar, title: 'Periodized plans', desc: 'Base → Build → Peak → Taper → Race. Recovery weeks built in. Strength work phased to match your running.' },
+              { icon: Calendar, title: 'Periodized plans', desc: 'Base, Build, Peak, Taper, Race. Recovery weeks built in. Strength work phased to match your running.' },
               { icon: Brain, title: 'AI coach that listens', desc: 'Chat naturally about your training. The coach proposes changes you can apply, tweak, or skip.' },
               { icon: Zap, title: 'Adapts to your life', desc: 'Tennis on Tuesdays? Vacation in August? Niggling knee? The plan flows around your constraints.' },
               { icon: BarChart3, title: 'Learns from every run', desc: 'Rate your effort after each session. Connect Strava for auto tracking. The plan gets smarter.' },
@@ -105,8 +105,8 @@ export default function HomePage() {
 
           <div className="space-y-6">
             {[
-              { step: '01', title: 'Tell us about yourself', desc: 'Age, fitness level, goals, weekly schedule, and other activities — so we can build a plan that fits your life.' },
-              { step: '02', title: 'Get your periodized plan', desc: 'A full training plan from today to race day, with every session structured: warm-up, main set, cooldown, target paces.' },
+              { step: '01', title: 'Tell us about yourself', desc: 'Age, fitness level, goals, weekly schedule, and other activities so we can build a plan that fits your life.' },
+              { step: '02', title: 'Get your periodized plan', desc: 'A full training plan from today to race day, with every session structured with warmup, main set, cooldown, and target paces.' },
               { step: '03', title: 'Train and adapt', desc: 'Log your runs, rate your effort, and chat with your AI coach. The plan evolves based on how your body responds.' },
             ].map(s => (
               <div key={s.step} className="flex gap-5 items-start">
@@ -123,13 +123,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== SOCIAL PROOF / KEY STATS ===== */}
+      {/* ===== KEY STATS ===== */}
       <section className="py-16 md:py-24 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {[
-              { stat: '5K–42K', label: 'All distances' },
-              { stat: '17wk', label: 'Default plan' },
+              { stat: '5K to 42K', label: 'All distances' },
+              { stat: '17 wk', label: 'Default plan' },
               { stat: 'AI', label: 'Powered coach' },
               { stat: '∞', label: 'Adaptations' },
             ].map(s => (
@@ -150,12 +150,12 @@ export default function HomePage() {
             {[
               'Personalized periodized plan',
               'AI chat coach (Claude)',
-              'Strava auto-sync',
-              'RPE-based adaptation',
+              'Strava auto sync',
+              'RPE based adaptation',
               'Structured workout blocks',
               'Constraint scheduling',
-              'Vacation & injury handling',
-              'Phase-aware strength training',
+              'Vacation and injury handling',
+              'Phase aware strength training',
               'Audit log for all changes',
               'Dark mode',
             ].map(item => (
