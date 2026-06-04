@@ -18,7 +18,7 @@ export default function HomePage() {
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 pt-12 pb-24 md:pt-20 md:pb-32">
           <nav className="flex items-center justify-between mb-16 md:mb-24">
-            <h2 className="text-xl font-bold tracking-tight">RunCoach<span className="text-primary">AI</span></h2>
+            <h2 className="text-xl font-bold tracking-tight">RUN<span className="text-primary">.</span></h2>
             <Link href="/auth/login" className="text-sm font-medium hover:text-primary transition-colors">
               Sign in
             </Link>
@@ -168,7 +168,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t py-8 px-6 text-center text-sm text-muted-foreground">
-        <p>RunCoach AI — Adaptive training powered by Claude</p>
+        <p>RUN. — Adaptive training powered by Claude</p>
       </footer>
     </div>
   );

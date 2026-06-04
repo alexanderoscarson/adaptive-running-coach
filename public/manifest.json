@@ -1,6 +1,6 @@
 {
-  "name": "RunCoach AI",
-  "short_name": "RunCoach",
+  "name": "RUN.",
+  "short_name": "RUN.",
   "description": "Adaptive AI running coach",
   "start_url": "/today",
   "display": "standalone",

@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Loader2, Search, MapPin, Calendar, Trophy, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Search, MapPin, Calendar, Trophy, X, Info } from 'lucide-react';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_VALUES = [1, 2, 3, 4, 5, 6, 0];
@@ -81,8 +81,8 @@ export default function OnboardingPage() {
   const [baselineMarathon, setBaselineMarathon] = useState('');
   const [weeklyMileage, setWeeklyMileage] = useState('20');
   const [runsPerWeek, setRunsPerWeek] = useState('3');
-  const [availableDays, setAvailableDays] = useState<number[]>([1, 3, 5, 6]);
-  const [longRunDay, setLongRunDay] = useState(6);
+  const [availableDays, setAvailableDays] = useState<number[]>([]);
+  const [longRunDay, setLongRunDay] = useState<number | null>(null);
   const [strengthPref, setStrengthPref] = useState('moderate');
   const [maxHr, setMaxHr] = useState('');
   const [restingHr, setRestingHr] = useState('');
@@ -167,8 +167,8 @@ export default function OnboardingPage() {
       resting_hr: restingHr ? parseInt(restingHr) : null,
       current_weekly_mileage_km: weeklyMileage ? parseFloat(weeklyMileage) : 20,
       runs_per_week: runsPerWeek ? parseInt(runsPerWeek) : 3,
-      available_days: availableDays,
-      preferred_long_run_day: longRunDay,
+      available_days: availableDays.length > 0 ? availableDays : [1, 3, 5, 6],
+      preferred_long_run_day: longRunDay ?? 6,
       strength_preference: strengthPref,
       onboarding_completed: true,
       onboarding_step: TOTAL_STEPS,
@@ -486,6 +486,10 @@ export default function OnboardingPage() {
                       )}>{d}</button>
                     ))}
                   </div>
+                  <div className="flex items-start gap-2 mt-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
+                    <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground">We recommend 3–5 days per week with at least one rest day between hard sessions. Spreading runs across the week helps recovery.</p>
+                  </div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Preferred long run day</Label>
@@ -502,6 +506,10 @@ export default function OnboardingPage() {
                         )}
                       >{d}</button>
                     ))}
+                  </div>
+                  <div className="flex items-start gap-2 mt-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
+                    <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground">Most runners do their long run on Saturday or Sunday when they have more time. Pick the day that works best for you.</p>
                   </div>
                 </div>
               </div>

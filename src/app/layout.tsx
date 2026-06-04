@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RunCoach AI — Adaptive Running Coach",
+  title: "RUN. — Adaptive Running Coach",
   description: "AI-powered adaptive running and training coach. Personalized periodized plans, real-time coaching, and Strava integration.",
   manifest: "/manifest.json",
 };

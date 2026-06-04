@@ -58,7 +58,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm space-y-8">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-            <p className="text-muted-foreground mt-1">Sign in to your RunCoach AI account</p>
+            <p className="text-muted-foreground mt-1">Sign in to your RUN. account</p>
           </div>
 
           <Button variant="outline" className="w-full h-11 rounded-xl" onClick={handleGoogleLogin}>
