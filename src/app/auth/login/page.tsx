@@ -75,11 +75,11 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
               <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 h-11 rounded-xl" />
             </div>
             <div>
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+              <Label htmlFor="password" className="text-sm font-semibold">Password</Label>
               <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 h-11 rounded-xl" />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
@@ -90,7 +90,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             No account?{' '}
-            <a href="/auth/signup" className="text-primary font-medium hover:underline">Sign up free</a>
+            <a href="/auth/signup" className="text-primary font-semibold hover:underline">Sign up free</a>
           </p>
         </div>
       </div>

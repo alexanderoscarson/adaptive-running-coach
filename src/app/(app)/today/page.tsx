@@ -64,6 +64,7 @@ export default function TodayPage() {
   const [rpe, setRpe] = useState([5]);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
+  const [completedActivities, setCompletedActivities] = useState<Set<string>>(new Set());
   const [userName, setUserName] = useState('');
   const router = useRouter();
   const supabase = createClient();
@@ -271,15 +272,30 @@ export default function TodayPage() {
                       </button>
                     </div>
                   ))}
-                  {dayConstraints.map(c => (
-                    <div key={c.id} className="flex items-center gap-3 py-2">
-                      <div className="w-2.5 h-2.5 rounded-sm shrink-0 bg-pink-400" />
-                      <span className="text-xs font-bold w-8 text-muted-foreground">{day.name}</span>
-                      <span className="text-sm font-bold flex-1 text-pink-600 dark:text-pink-400">
-                        {ACTIVITY_LABELS[c.activity_type || ''] || c.activity_type || 'Activity'}
-                      </span>
-                    </div>
-                  ))}
+                  {dayConstraints.map(c => {
+                    const actKey = `${c.id}-${dayValue}`;
+                    const isDone = completedActivities.has(actKey);
+                    return (
+                      <div key={c.id} className={cn('flex items-center gap-3 py-2', isDone && 'opacity-50')}>
+                        <div className="w-2.5 h-2.5 rounded-sm shrink-0 bg-pink-400" />
+                        <span className="text-xs font-bold w-8 text-muted-foreground">{day.name}</span>
+                        <span className={cn('text-sm font-bold flex-1 text-pink-600 dark:text-pink-400', isDone && 'line-through')}>
+                          {ACTIVITY_LABELS[c.activity_type || ''] || c.activity_type || 'Activity'}
+                        </span>
+                        <button onClick={() => setCompletedActivities(prev => {
+                          const next = new Set(prev);
+                          if (next.has(actKey)) next.delete(actKey); else next.add(actKey);
+                          return next;
+                        })} className="shrink-0">
+                          {isDone ? (
+                            <CheckCircle2 className="h-5 w-5 text-pink-500" />
+                          ) : (
+                            <Circle className="h-5 w-5 text-muted-foreground/30 hover:text-pink-400/60 transition-colors" />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -365,8 +381,11 @@ export default function TodayPage() {
           ))}
 
           {/* Today's constraint activities */}
-          {todayConstraints.map(c => (
-            <Card key={c.id} className="overflow-hidden">
+          {todayConstraints.map(c => {
+            const actKey = `today-${c.id}`;
+            const isDone = completedActivities.has(actKey);
+            return (
+            <Card key={c.id} className={cn('overflow-hidden', isDone && 'opacity-60')}>
               <div className="h-1.5 bg-pink-400" />
               <CardContent className="py-4 px-5 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-xl">
@@ -377,13 +396,25 @@ export default function TodayPage() {
                    c.activity_type === 'hiking' ? '🥾' :
                    c.activity_type === 'generic_strength' ? '🏋️' : '💪'}
                 </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="text-lg font-extrabold">{ACTIVITY_LABELS[c.activity_type || ''] || 'Activity'}</h3>
-                  <p className="text-xs text-muted-foreground font-medium">Scheduled activity · Plan adjusted around this</p>
+                  <p className="text-xs text-muted-foreground font-semibold">Scheduled activity</p>
                 </div>
+                <button onClick={() => setCompletedActivities(prev => {
+                  const next = new Set(prev);
+                  if (next.has(actKey)) next.delete(actKey); else next.add(actKey);
+                  return next;
+                })}>
+                  {isDone ? (
+                    <CheckCircle2 className="h-6 w-6 text-pink-500" />
+                  ) : (
+                    <Circle className="h-6 w-6 text-muted-foreground/30 hover:text-pink-400/60 transition-colors" />
+                  )}
+                </button>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </>
       )}
 

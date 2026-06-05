@@ -204,11 +204,11 @@ export default function PlanPage() {
 
             <div className="flex justify-between mt-3">
               <div>
-                <p className="text-xs text-muted-foreground font-medium">Total Weeks</p>
+                <p className="text-xs text-muted-foreground font-semibold">Total Weeks</p>
                 <p className="text-xl font-extrabold">{completedWeeks}/{totalWeeks}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-muted-foreground font-medium">Total Distance</p>
+                <p className="text-xs text-muted-foreground font-semibold">Total Distance</p>
                 <p className="text-xl font-extrabold">{Math.round(totalDistance)} km</p>
               </div>
             </div>

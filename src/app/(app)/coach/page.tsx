@@ -144,7 +144,7 @@ export default function CoachPage() {
           {messages.length === 0 && (
             <div className="text-center py-12">
               <Bot className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-              <p className="text-sm font-medium">Your AI running coach</p>
+              <p className="text-sm font-semibold">Your AI running coach</p>
               <p className="text-xs text-muted-foreground mt-1">Ask about your training, request changes, or get advice</p>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {['How is my training going?', 'I feel tired today', 'Can I swap tomorrow\'s run?', 'What pace for my long run?'].map(q => (
@@ -209,8 +209,10 @@ export default function CoachPage() {
               <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <Bot className="h-4 w-4 text-primary" />
               </div>
-              <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           )}
@@ -255,7 +257,7 @@ function ProposalCard({
           <Badge variant="secondary" className="text-[10px]">{proposal.modification_type.replace('_', ' ')}</Badge>
           {applied && <Badge className="text-[10px] bg-green-500">Applied</Badge>}
         </div>
-        <p className="text-sm font-medium">{proposal.summary}</p>
+        <p className="text-sm font-semibold">{proposal.summary}</p>
         <p className="text-xs text-muted-foreground">{proposal.reason}</p>
         {!applied && (
           <div className="flex gap-2 pt-1">

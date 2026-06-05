@@ -357,7 +357,10 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
   }
 
   if (strengthPreference !== 'none' && !isVacation) {
-    const strengthDay = runDays.find(d => !sessions.some(s => s.dayOfWeek === d)) || (availableDays.find(d => !sessions.some(s => s.dayOfWeek === d)));
+    // Skip adding strength if user already has a generic_strength constraint
+    const hasStrengthConstraint = constrainedDays.has(null) ? false : Array.from(constrainedDays).length > 0;
+    const strengthDay = runDays.find(d => !sessions.some(s => s.dayOfWeek === d) && !constrainedDays.has(d))
+      || (availableDays.find(d => !sessions.some(s => s.dayOfWeek === d) && !constrainedDays.has(d)));
     if (strengthDay !== undefined) {
       sessions.push(createStrengthSession(phase, strengthPreference, strengthDay));
     }

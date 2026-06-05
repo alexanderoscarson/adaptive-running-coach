@@ -46,7 +46,7 @@ export default function AuditPage() {
             <Card>
               <CardContent className="py-12 text-center">
                 <RefreshCw className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-sm font-medium">No adaptations yet</p>
+                <p className="text-sm font-semibold">No adaptations yet</p>
                 <p className="text-xs text-muted-foreground mt-1">Changes to your plan will appear here</p>
               </CardContent>
             </Card>

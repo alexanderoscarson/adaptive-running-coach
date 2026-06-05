@@ -21,7 +21,7 @@ export default function HomePage() {
               made <span className="text-primary">simple</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-lg mt-6 leading-relaxed">
-              Get the support you need as a runner with tailored plans to achieve your goals, from a faster 5K to completing your first marathon.
+              Tailored training plans for runners and hybrid athletes. Running, strength, cycling, swimming, tennis and more, all in one coach that adapts to your life.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 mt-8">
@@ -58,7 +58,7 @@ export default function HomePage() {
             ].map(d => (
               <Link href="/auth/signup" key={d.distance} className={`rounded-2xl bg-gradient-to-br ${d.gradient} p-6 md:p-8 text-white hover:scale-[1.03] transition-transform shadow-lg`}>
                 <div className="text-3xl md:text-4xl font-extrabold">{d.distance}</div>
-                <div className="text-xs font-medium mt-1 opacity-80">{d.weeks}</div>
+                <div className="text-xs font-semibold mt-1 opacity-80">{d.weeks}</div>
               </Link>
             ))}
           </div>
@@ -135,7 +135,7 @@ export default function HomePage() {
             ].map(s => (
               <div key={s.label}>
                 <div className="text-3xl md:text-4xl font-extrabold text-primary">{s.stat}</div>
-                <div className="text-sm text-muted-foreground font-medium mt-1">{s.label}</div>
+                <div className="text-sm text-muted-foreground font-semibold mt-1">{s.label}</div>
               </div>
             ))}
           </div>
@@ -183,7 +183,7 @@ export default function HomePage() {
           >
             Start training free <ArrowRight className="ml-2 h-5 w-5" />
           </Link>
-          <p className="text-xs text-muted-foreground font-medium">
+          <p className="text-xs text-muted-foreground font-semibold">
             Free · No credit card · Strava integration
           </p>
         </div>

@@ -176,13 +176,13 @@ export default function ConstraintsPage() {
 
       {recurringActivities.length > 0 && (
         <div>
-          <h2 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Activity className="h-4 w-4" /> Recurring Activities</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1.5"><Activity className="h-4 w-4" /> Recurring Activities</h2>
           <div className="space-y-1.5">
             {recurringActivities.map(c => (
               <Card key={c.id}>
                 <CardContent className="py-2.5 px-3 flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-medium capitalize">{c.activity_type?.replace('_', ' ')}</span>
+                    <span className="text-sm font-semibold capitalize">{c.activity_type?.replace('_', ' ')}</span>
                     <span className="text-xs text-muted-foreground ml-2">{DAYS[DAY_VALUES.indexOf(c.day_of_week!)]}</span>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeConstraint(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
@@ -195,13 +195,13 @@ export default function ConstraintsPage() {
 
       {vacations.length > 0 && (
         <div>
-          <h2 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><Plane className="h-4 w-4" /> Vacations</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1.5"><Plane className="h-4 w-4" /> Vacations</h2>
           <div className="space-y-1.5">
             {vacations.map(c => (
               <Card key={c.id}>
                 <CardContent className="py-2.5 px-3 flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-medium">{c.start_date} → {c.end_date}</span>
+                    <span className="text-sm font-semibold">{c.start_date} → {c.end_date}</span>
                     <Badge variant="outline" className="ml-2 text-xs">{c.vacation_mode}</Badge>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeConstraint(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
@@ -214,13 +214,13 @@ export default function ConstraintsPage() {
 
       {injuries.length > 0 && (
         <div>
-          <h2 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" /> Injuries</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" /> Injuries</h2>
           <div className="space-y-1.5">
             {injuries.map(c => (
               <Card key={c.id} className="border-red-200">
                 <CardContent className="py-2.5 px-3 flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-medium">{c.injury_description}</span>
+                    <span className="text-sm font-semibold">{c.injury_description}</span>
                     <Badge variant="destructive" className="ml-2 text-xs">{c.injury_severity}</Badge>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeConstraint(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
@@ -235,7 +235,7 @@ export default function ConstraintsPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <Calendar className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-            <p className="text-sm font-medium">No constraints yet</p>
+            <p className="text-sm font-semibold">No constraints yet</p>
             <p className="text-xs text-muted-foreground mt-1">Add activities, vacations, or injuries to shape your plan</p>
           </CardContent>
         </Card>

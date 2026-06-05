@@ -240,7 +240,7 @@ export default function OnboardingPage() {
         {/* Mobile progress bar */}
         <div className="md:hidden p-4 pb-0">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground font-medium">Step {step + 1} of {TOTAL_STEPS}</span>
+            <span className="text-xs text-muted-foreground font-semibold">Step {step + 1} of {TOTAL_STEPS}</span>
             <span className="text-xs text-primary font-semibold">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-1.5" />
@@ -263,15 +263,15 @@ export default function OnboardingPage() {
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium">Age</Label>
+                    <Label className="text-sm font-semibold">Age</Label>
                     <Input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="30" className="mt-1 h-11 rounded-xl" />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Gender</Label>
+                    <Label className="text-sm font-semibold">Gender</Label>
                     <div className="grid grid-cols-2 gap-2 mt-1">
                       {[{ v: 'male', l: 'Male' }, { v: 'female', l: 'Female' }, { v: 'non_binary', l: 'Non-binary' }, { v: 'prefer_not_to_say', l: 'Prefer not to say' }].map(g => (
                         <button key={g.v} onClick={() => setGender(g.v)} className={cn(
-                          'py-2.5 px-3 rounded-xl border text-sm font-medium transition-all',
+                          'py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all',
                           gender === g.v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
                         )}>{g.l}</button>
                       ))}
@@ -279,11 +279,11 @@ export default function OnboardingPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-sm font-medium">Max HR <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                      <Label className="text-sm font-semibold">Max HR <span className="text-muted-foreground font-normal">(optional)</span></Label>
                       <Input type="number" value={maxHr} onChange={e => setMaxHr(e.target.value)} placeholder="185" className="mt-1 h-11 rounded-xl" />
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Resting HR <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                      <Label className="text-sm font-semibold">Resting HR <span className="text-muted-foreground font-normal">(optional)</span></Label>
                       <Input type="number" value={restingHr} onChange={e => setRestingHr(e.target.value)} placeholder="55" className="mt-1 h-11 rounded-xl" />
                     </div>
                   </div>
@@ -306,7 +306,7 @@ export default function OnboardingPage() {
                       goalType === g.v ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
                     )}>
                       <div className="text-2xl mb-1">{g.icon}</div>
-                      <div className="text-xs font-medium">{g.l}</div>
+                      <div className="text-xs font-semibold">{g.l}</div>
                     </button>
                   ))}
                 </div>
@@ -314,11 +314,11 @@ export default function OnboardingPage() {
                 {goalType !== 'just_improve' && (
                   <>
                     <div>
-                      <Label className="text-sm font-medium">Race distance</Label>
+                      <Label className="text-sm font-semibold">Race distance</Label>
                       <div className="grid grid-cols-4 gap-2 mt-1">
                         {[{ v: '5k', l: '5K' }, { v: '10k', l: '10K' }, { v: 'half_marathon', l: 'Half' }, { v: 'marathon', l: 'Marathon' }].map(d => (
                           <button key={d.v} onClick={() => { setRaceDistance(d.v); setSelectedRace(null); }} className={cn(
-                            'py-2.5 rounded-xl border text-sm font-medium transition-all',
+                            'py-2.5 rounded-xl border text-sm font-semibold transition-all',
                             raceDistance === d.v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
                           )}>{d.l}</button>
                         ))}
@@ -327,7 +327,7 @@ export default function OnboardingPage() {
 
                     {/* Race Search */}
                     <div>
-                      <Label className="text-sm font-medium">Find your race</Label>
+                      <Label className="text-sm font-semibold">Find your race</Label>
                       <div className="relative mt-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -383,7 +383,7 @@ export default function OnboardingPage() {
                                     <Trophy className="h-4 w-4 text-primary" />
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{race.name}</p>
+                                    <p className="text-sm font-semibold truncate">{race.name}</p>
                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                       <MapPin className="h-3 w-3" />
                                       <span>{race.location}, {race.country}</span>
@@ -403,7 +403,7 @@ export default function OnboardingPage() {
                     {/* Manual date fallback */}
                     {!selectedRace && (
                       <div>
-                        <Label className="text-sm font-medium">Or enter a date manually</Label>
+                        <Label className="text-sm font-semibold">Or enter a date manually</Label>
                         <Input type="date" value={raceDate} onChange={e => setRaceDate(e.target.value)} className="mt-1 h-11 rounded-xl" />
                       </div>
                     )}
@@ -412,7 +412,7 @@ export default function OnboardingPage() {
 
                 {goalType === 'target_time' && (
                   <div>
-                    <Label className="text-sm font-medium">Target time (HH:MM:SS)</Label>
+                    <Label className="text-sm font-semibold">Target time (HH:MM:SS)</Label>
                     <Input value={targetTime} onChange={e => setTargetTime(e.target.value)} placeholder="1:45:00" className="mt-1 h-11 rounded-xl" />
                   </div>
                 )}
@@ -434,7 +434,7 @@ export default function OnboardingPage() {
                     { label: 'Marathon time', value: baselineMarathon, set: setBaselineMarathon, ph: '4:10:00' },
                   ].map(f => (
                     <div key={f.label}>
-                      <Label className="text-sm font-medium">{f.label}</Label>
+                      <Label className="text-sm font-semibold">{f.label}</Label>
                       <Input value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.ph} className="mt-1 h-11 rounded-xl" />
                     </div>
                   ))}
@@ -453,11 +453,11 @@ export default function OnboardingPage() {
                   <p className="text-muted-foreground mt-1">How much are you running right now?</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">Weekly distance (km)</Label>
+                  <Label className="text-sm font-semibold">Weekly distance (km)</Label>
                   <Input type="number" value={weeklyMileage} onChange={e => setWeeklyMileage(e.target.value)} placeholder="20" className="mt-1 h-11 rounded-xl" />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">Runs per week</Label>
+                  <Label className="text-sm font-semibold">Runs per week</Label>
                   <div className="flex gap-2 mt-2">
                     {[2, 3, 4, 5, 6].map(n => (
                       <button key={n} onClick={() => setRunsPerWeek(String(n))} className={cn(
@@ -478,11 +478,11 @@ export default function OnboardingPage() {
                   <p className="text-muted-foreground mt-1">Which days can you run?</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">Available days</Label>
+                  <Label className="text-sm font-semibold mb-2 block">Available days</Label>
                   <div className="grid grid-cols-7 gap-1.5">
                     {DAYS.map((d, i) => (
                       <button key={d} onClick={() => toggleDay(DAY_VALUES[i])} className={cn(
-                        'py-3 rounded-xl border text-sm font-medium transition-all',
+                        'py-3 rounded-xl border text-sm font-semibold transition-all',
                         availableDays.includes(DAY_VALUES[i]) ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/40'
                       )}>{d}</button>
                     ))}
@@ -493,7 +493,7 @@ export default function OnboardingPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">Preferred long run day</Label>
+                  <Label className="text-sm font-semibold mb-2 block">Preferred long run day</Label>
                   <div className="grid grid-cols-7 gap-1.5">
                     {DAYS.map((d, i) => (
                       <button
@@ -501,7 +501,7 @@ export default function OnboardingPage() {
                         onClick={() => setLongRunDay(DAY_VALUES[i])}
                         disabled={!availableDays.includes(DAY_VALUES[i])}
                         className={cn(
-                          'py-3 rounded-xl border text-sm font-medium transition-all',
+                          'py-3 rounded-xl border text-sm font-semibold transition-all',
                           longRunDay === DAY_VALUES[i] ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary/40',
                           !availableDays.includes(DAY_VALUES[i]) && 'opacity-30 cursor-not-allowed'
                         )}
@@ -555,13 +555,13 @@ export default function OnboardingPage() {
                 <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1">
                   {ACTIVITIES.map(act => (
                     <div key={act.value}>
-                      <div className="text-sm font-medium mb-1.5">{act.emoji} {act.label}</div>
+                      <div className="text-sm font-semibold mb-1.5">{act.emoji} {act.label}</div>
                       <div className="grid grid-cols-7 gap-1">
                         {DAYS.map((d, i) => {
                           const selected = activities.some(a => a.type === act.value && a.day === DAY_VALUES[i]);
                           return (
                             <button key={d} onClick={() => toggleActivity(act.value, DAY_VALUES[i])} className={cn(
-                              'py-1.5 rounded-lg border text-xs font-medium transition-all',
+                              'py-1.5 rounded-lg border text-xs font-semibold transition-all',
                               selected ? 'border-primary bg-primary/10 text-primary' : 'border-border/50 hover:border-primary/40 text-muted-foreground'
                             )}>{d}</button>
                           );
@@ -587,32 +587,32 @@ export default function OnboardingPage() {
                 <div className="rounded-2xl bg-card border p-5 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Goal</span>
-                    <span className="font-medium">
+                    <span className="font-semibold">
                       {selectedRace ? selectedRace.name : goalType === 'just_improve' ? 'General improvement' : `${raceDistance.replace('_', ' ')} ${goalType}`}
                     </span>
                   </div>
                   {raceDate && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Race date</span>
-                      <span className="font-medium">{new Date(raceDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                      <span className="font-semibold">{new Date(raceDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Current volume</span>
-                    <span className="font-medium">{weeklyMileage}km / {runsPerWeek} runs per week</span>
+                    <span className="font-semibold">{weeklyMileage}km / {runsPerWeek} runs per week</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Plan length</span>
-                    <span className="font-medium">17 weeks</span>
+                    <span className="font-semibold">17 weeks</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Strength</span>
-                    <span className="font-medium capitalize">{strengthPref}</span>
+                    <span className="font-semibold capitalize">{strengthPref}</span>
                   </div>
                   {activities.length > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Other activities</span>
-                      <span className="font-medium">{activities.length} scheduled</span>
+                      <span className="font-semibold">{activities.length} scheduled</span>
                     </div>
                   )}
                 </div>
