@@ -53,7 +53,7 @@ export default function HomePage() {
             {[
               { distance: '5K', label: '5K', weeks: '8 to 12 weeks', gradient: 'from-emerald-500 to-emerald-600' },
               { distance: '10K', label: '10K', weeks: '10 to 14 weeks', gradient: 'from-blue-500 to-blue-600' },
-              { distance: 'Half', label: 'Half Marathon', weeks: '12 to 17 weeks', gradient: 'from-primary to-orange-600' },
+              { distance: 'Half', label: 'Half Marathon', weeks: '12 to 17 weeks', gradient: 'from-primary to-violet-500' },
               { distance: 'Marathon', label: 'Marathon', weeks: '16 to 20 weeks', gradient: 'from-red-500 to-red-600' },
             ].map(d => (
               <Link href="/auth/signup" key={d.distance} className={`rounded-2xl bg-gradient-to-br ${d.gradient} p-6 md:p-8 text-white hover:scale-[1.03] transition-transform shadow-lg`}>
@@ -88,7 +88,7 @@ export default function HomePage() {
                   <f.icon className="h-5 w-5 text-primary" />
                 </div>
                 <h3 className="text-lg font-extrabold mb-2">{f.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
+                <p className="text-muted-foreground text-sm font-semibold leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>

@@ -11,7 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { CheckCircle2, Circle, Clock, Zap, Heart, AlertTriangle, Undo2, Info, Dumbbell, Play } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Zap, Heart, AlertTriangle, Undo2, Info, Dumbbell, Play, ChevronDown, ChevronUp, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Session, PlanIntent, Constraint } from '@/types/database';
 
@@ -47,6 +47,49 @@ const ACTIVITY_LABELS: Record<string, string> = {
   generic_cardio: 'Cardio', generic_strength: 'Gym',
 };
 
+const WORKOUT_EXPLAINERS: Record<string, { title: string; explanation: string; tips: string[] }> = {
+  easy: {
+    title: 'Why easy runs matter',
+    explanation: 'Easy runs build your aerobic base without stressing your body. They improve fat burning, strengthen tendons and ligaments, and promote recovery between hard sessions. Most of your weekly mileage should be at this effort.',
+    tips: ['Keep it conversational. If you can\'t talk in full sentences, slow down.', 'Don\'t chase pace. Go by feel and heart rate.', 'These runs should feel almost too easy.'],
+  },
+  long: {
+    title: 'Why long runs matter',
+    explanation: 'The long run is the cornerstone of endurance training. It teaches your body to burn fat efficiently, builds mental toughness, and prepares your muscles and joints for race distance. Fueling and hydration practice starts here.',
+    tips: ['Start slower than you think. Negative split if possible.', 'Practice your race day nutrition on long runs.', 'Stay consistent. The long run builds over weeks.'],
+  },
+  tempo: {
+    title: 'Why tempo runs matter',
+    explanation: 'Tempo runs train your lactate threshold, the pace you can sustain for about an hour. Running at this "comfortably hard" effort teaches your body to clear lactate faster, making race pace feel easier over time.',
+    tips: ['Aim for a pace you could hold for about 50 to 60 minutes in a race.', 'It should feel controlled but challenging. Not an all out effort.', 'Focus on even pacing throughout the tempo section.'],
+  },
+  intervals: {
+    title: 'Why intervals matter',
+    explanation: 'Interval training improves your VO2max, the maximum amount of oxygen your body can use. These hard repeats with recovery between them push your cardiovascular system to adapt and become more efficient at delivering oxygen to your muscles.',
+    tips: ['Run the repeats at a consistent effort, not all out on the first one.', 'Use the recovery fully. Walk or jog, don\'t rush it.', 'Quality over quantity. If form breaks down, stop.'],
+  },
+  hills: {
+    title: 'Why hill work matters',
+    explanation: 'Hills build running-specific strength, improve your stride power, and boost VO2max with less impact stress than flat intervals. The uphill works your glutes and calves hard while the downhill trains eccentric strength.',
+    tips: ['Lean slightly forward into the hill, don\'t hunch.', 'Shorten your stride going up, focus on cadence.', 'Controlled effort on the way down to protect your knees.'],
+  },
+  recovery: {
+    title: 'Why recovery runs matter',
+    explanation: 'Recovery runs increase blood flow to tired muscles without adding training stress. They help flush metabolic waste and promote adaptation from your harder sessions. The key is keeping the effort genuinely easy.',
+    tips: ['Slower than your easy pace. This is the easiest run of the week.', 'If you feel tired, it\'s OK to walk sections.', 'Keep it short. The goal is movement, not mileage.'],
+  },
+  strength: {
+    title: 'Why strength training matters',
+    explanation: 'Strength work prevents injuries, improves running economy, and builds the muscular endurance needed for late race performance. Runner-specific strength focuses on single leg stability, hip strength, and core control.',
+    tips: ['Focus on form over weight. Quality reps prevent injury.', 'Compound movements (squats, deadlifts, lunges) give the most return.', 'Schedule strength 2+ hours away from quality runs when possible.'],
+  },
+  race: {
+    title: 'Race day',
+    explanation: 'Trust your training. The hay is in the barn. Your job today is to execute the pacing strategy you\'ve practiced and enjoy the experience.',
+    tips: ['Start conservatively. The first km should feel easy.', 'Stick to your nutrition plan. Nothing new on race day.', 'Smile at the crowds. It actually helps with perceived effort.'],
+  },
+};
+
 function formatPace(pace: number | null) {
   if (!pace) return '--:--';
   const mins = Math.floor(pace);
@@ -65,6 +108,7 @@ export default function TodayPage() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [completedActivities, setCompletedActivities] = useState<Set<string>>(new Set());
+  const [expandedExplainer, setExpandedExplainer] = useState<string | null>(null);
   const [userName, setUserName] = useState('');
   const router = useRouter();
   const supabase = createClient();
@@ -337,6 +381,34 @@ export default function TodayPage() {
                 </div>
 
                 <p className="text-sm text-muted-foreground leading-relaxed">{session.description}</p>
+
+                {/* Expandable workout explainer */}
+                {WORKOUT_EXPLAINERS[session.type] && (
+                  <div>
+                    <button
+                      onClick={() => setExpandedExplainer(expandedExplainer === session.id ? null : session.id)}
+                      className="flex items-center gap-2 text-xs font-bold text-primary hover:text-primary/80 transition-colors py-1"
+                    >
+                      <Lightbulb className="h-3.5 w-3.5" />
+                      {expandedExplainer === session.id ? 'Hide info' : 'Why this workout?'}
+                      {expandedExplainer === session.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    </button>
+                    {expandedExplainer === session.id && (
+                      <div className="mt-2 rounded-xl bg-primary/5 border border-primary/10 p-4 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <h4 className="text-sm font-extrabold">{WORKOUT_EXPLAINERS[session.type].title}</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{WORKOUT_EXPLAINERS[session.type].explanation}</p>
+                        <div className="space-y-1.5">
+                          {WORKOUT_EXPLAINERS[session.type].tips.map((tip, i) => (
+                            <div key={i} className="flex items-start gap-2">
+                              <span className="text-primary text-xs font-extrabold mt-0.5">•</span>
+                              <span className="text-xs font-semibold text-muted-foreground">{tip}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Workout structure blocks — Runna style */}
                 {session.structure && (session.structure as { blocks: Array<{ type: string; description: string; distance_km?: number; duration_minutes?: number; repeats?: number; target_pace_min_km?: number }> }).blocks?.length > 0 && (

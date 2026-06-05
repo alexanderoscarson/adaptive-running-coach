@@ -34,12 +34,27 @@ export async function POST(request: NextRequest) {
     updated_at: new Date().toISOString(),
   }).eq('id', sessionId);
 
-  if (rpe && (rpe <= 3 || rpe >= 8)) {
+  // Check if user has auto_adapt mode enabled before adjusting
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('coach_mode')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.coach_mode === 'auto_adapt' && rpe && (rpe <= 3 || rpe >= 8)) {
     await adjustUpcomingSessions(supabase, user.id, rpe, avgPaceMinKm, session.target_pace_min_km);
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(log);
+
+  // Return suggestion flag so the UI can show a hint (not auto-applied)
+  const suggestion = rpe && (rpe <= 3 || rpe >= 8) && profile?.coach_mode !== 'auto_adapt'
+    ? rpe >= 8
+      ? 'Your effort was high. Consider asking Coach to ease upcoming sessions.'
+      : 'You found that easy. Consider asking Coach to bump your targets.'
+    : null;
+
+  return NextResponse.json({ ...log, suggestion });
 }
 
 async function adjustUpcomingSessions(

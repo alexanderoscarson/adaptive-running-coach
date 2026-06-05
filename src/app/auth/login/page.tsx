@@ -41,7 +41,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left — branded panel */}
-      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary to-orange-600 items-center justify-center p-12">
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary to-violet-500 items-center justify-center p-12">
         <div className="text-white max-w-sm">
           <h2 className="text-5xl font-extrabold tracking-tight leading-tight">Your best run is ahead of you.</h2>
           <p className="text-white/70 mt-4 text-lg">Personalized training that adapts to your life, powered by AI.</p>
