@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RUN. — The training app adjusted for your actual life",
+  title: "Parrot — Your Personal Trainer for your actual life",
   description: "AI-powered adaptive training coach for runners and hybrid athletes. Personalized periodized plans, real time coaching, and Strava integration.",
   manifest: "/manifest.json",
 };

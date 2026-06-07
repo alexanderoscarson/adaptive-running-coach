@@ -1,7 +1,7 @@
 {
-  "name": "RUN.",
-  "short_name": "RUN.",
-  "description": "Adaptive AI running coach",
+  "name": "Parrot",
+  "short_name": "PT",
+  "description": "Your Personal Trainer for your actual life",
   "start_url": "/today",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -21,8 +21,8 @@ export function SidebarNav() {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-sidebar text-sidebar-foreground h-screen sticky top-0 border-r border-sidebar-border">
       <div className="p-6">
-        <h1 className="text-2xl font-extrabold tracking-tight">RUN<span className="text-primary">.</span></h1>
-        <p className="text-[10px] text-sidebar-foreground/40 font-bold uppercase tracking-widest mt-1">Adaptive Coach</p>
+        <h1 className="text-2xl font-extrabold tracking-tight">P<span className="text-primary">T</span></h1>
+        <p className="text-[10px] text-sidebar-foreground/40 font-bold uppercase tracking-widest mt-1">Personal Trainer</p>
       </div>
       <nav className="flex-1 px-3 space-y-0.5">
         {NAV_ITEMS.map(item => {

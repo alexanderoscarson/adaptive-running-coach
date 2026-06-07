@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, Brain, BarChart3, Calendar, Zap, CheckCircle2 } from 'lucide-react';
+import { HeroAnimation } from '@/components/landing/hero-animation';
 
 export default function HomePage() {
   return (
@@ -7,19 +8,25 @@ export default function HomePage() {
       {/* Subtle grid texture */}
       <div className="fixed inset-0 bg-grid opacity-30 pointer-events-none" />
 
-      {/* ===== HERO ===== */}
-      <section className="relative px-6 pb-24 md:pb-32">
-        <div className="max-w-5xl mx-auto">
-          <nav className="flex items-center justify-between py-6">
-            <h2 className="text-2xl font-extrabold tracking-tight">RUN<span className="text-primary">.</span></h2>
-            <Link href="/auth/login" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">
-              Sign in
-            </Link>
-          </nav>
+      {/* ===== ANIMATED HERO ===== */}
+      <HeroAnimation />
 
-          <div className="pt-16 md:pt-24 max-w-3xl">
+      {/* ===== NAV BAR (appears after hero scroll) ===== */}
+      <section className="relative px-6 py-6">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <h2 className="text-2xl font-extrabold tracking-tight font-display">P<span className="text-primary">T</span></h2>
+          <Link href="/auth/login" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">
+            Sign in
+          </Link>
+        </div>
+      </section>
+
+      {/* ===== CTA SECTION ===== */}
+      <section className="relative px-6 pb-20 md:pb-28">
+        <div className="max-w-5xl mx-auto">
+          <div className="max-w-3xl">
             <p className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-5">Adaptive coaching</p>
-            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-display tracking-tight leading-[0.95] uppercase">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-display tracking-tight leading-[0.95] uppercase">
               The training app adjusted for your <span className="text-primary">actual life</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-lg mt-8 leading-relaxed font-semibold">
@@ -48,7 +55,7 @@ export default function HomePage() {
       <section className="relative px-6 py-20 md:py-24">
         <div className="max-w-5xl mx-auto">
           <p className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-3 text-center">Choose your distance</p>
-          <h2 className="text-3xl md:text-4xl font-display tracking-tight text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-display tracking-tight text-center mb-12 uppercase">
             Find the plan that&apos;s right for you
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
@@ -71,7 +78,7 @@ export default function HomePage() {
       <section className="relative py-20 md:py-28 px-6">
         <div className="max-w-5xl mx-auto">
           <p className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-3 text-center">Features</p>
-          <h2 className="text-3xl md:text-4xl font-display tracking-tight mb-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-display tracking-tight mb-4 text-center uppercase">
             Everything a coach does
           </h2>
           <p className="text-muted-foreground text-lg max-w-lg mx-auto text-center mb-14 font-semibold">
@@ -101,7 +108,7 @@ export default function HomePage() {
       <section className="relative py-20 md:py-28 px-6">
         <div className="max-w-3xl mx-auto">
           <p className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-3 text-center">How it works</p>
-          <h2 className="text-3xl md:text-4xl font-display tracking-tight text-center mb-14">
+          <h2 className="text-3xl md:text-4xl font-display tracking-tight text-center mb-14 uppercase">
             Ready in 2 minutes
           </h2>
 
@@ -147,7 +154,7 @@ export default function HomePage() {
       {/* ===== WHAT'S INCLUDED ===== */}
       <section className="relative py-20 md:py-28 px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-display tracking-tight mb-10">What&apos;s included</h2>
+          <h2 className="text-3xl md:text-4xl font-display tracking-tight mb-10 uppercase">What&apos;s included</h2>
           <div className="grid sm:grid-cols-2 gap-3 text-left">
             {[
               'Personalized periodized plan',
@@ -173,8 +180,8 @@ export default function HomePage() {
       {/* ===== FINAL CTA ===== */}
       <section className="relative py-24 md:py-32 px-6">
         <div className="max-w-lg mx-auto text-center space-y-8">
-          <h2 className="text-3xl md:text-5xl font-display tracking-tight">
-            Your next PR<br />starts <span className="text-primary">here</span>
+          <h2 className="text-3xl md:text-5xl font-display tracking-tight uppercase">
+            Your next PR starts <span className="text-primary">here</span>
           </h2>
           <p className="text-muted-foreground text-lg font-semibold">
             Set up takes 2 minutes. Your plan is generated instantly.
@@ -194,8 +201,8 @@ export default function HomePage() {
       {/* ===== FOOTER ===== */}
       <footer className="border-t border-border py-8 px-6">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <p className="text-sm font-extrabold">RUN<span className="text-primary">.</span></p>
-          <p className="text-xs text-muted-foreground font-bold">Adaptive training powered by AI</p>
+          <p className="text-sm font-extrabold font-display">P<span className="text-primary">T</span></p>
+          <p className="text-xs text-muted-foreground font-bold">Parrot — Your Personal Trainer</p>
         </div>
       </footer>
     </div>
