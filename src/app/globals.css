@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  /* no separate heading font — using sans everywhere */
+  --font-display: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -51,86 +51,87 @@
 }
 
 /* ======================================
-   ELECTRIC BLUE / DARK — Premium Athletic
-   Nike Training Club × Strava energy
+   PINK / PURPLE / LEMON Palette
+   Tanker display + DM Sans body
    ====================================== */
 
 :root {
-  /* Light mode: warm off-white with electric blue */
-  --background: #F5F4F0;
-  --foreground: #0A0A0F;
-  --card: #FFFFFF;
-  --card-foreground: #0A0A0F;
-  --popover: #FFFFFF;
-  --popover-foreground: #0A0A0F;
-  --primary: #0066FF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #EEEDEA;
-  --secondary-foreground: #1A1A2E;
-  --muted: #EEEDEA;
-  --muted-foreground: #6B6B7B;
-  --accent: #E8EEFF;
-  --accent-foreground: #0044CC;
-  --destructive: #E53E3E;
-  --border: #D8D7D3;
-  --input: #E8E7E3;
-  --ring: #0066FF;
-  --chart-1: #0066FF;
-  --chart-2: #3385FF;
-  --chart-3: #66A3FF;
-  --chart-4: #99C2FF;
-  --chart-5: #003399;
-  --radius: 0.875rem;
-  --electric: #0066FF;
-  --glow: rgba(0, 102, 255, 0.15);
+  font-size: 17px;
 
-  /* Sidebar stays dark in light mode for contrast */
-  --sidebar: #0A0A0F;
-  --sidebar-foreground: #E8E8EC;
-  --sidebar-primary: #0066FF;
+  --background: #FFE8F0;
+  --foreground: #3D1A5E;
+  --card: #FFFACD;
+  --card-foreground: #3D1A5E;
+  --popover: #FFFACD;
+  --popover-foreground: #3D1A5E;
+  --primary: #A855F7;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFD6E8;
+  --secondary-foreground: #3D1A5E;
+  --muted: #FFD6E8;
+  --muted-foreground: #7A4A8E;
+  --accent: #FF5BA0;
+  --accent-foreground: #FFFFFF;
+  --destructive: #E53E3E;
+  --border: #F0C0D8;
+  --input: #FFD6E8;
+  --ring: #A855F7;
+  --chart-1: #A855F7;
+  --chart-2: #FF5BA0;
+  --chart-3: #C084FC;
+  --chart-4: #FF8EC4;
+  --chart-5: #7C3AED;
+  --radius: 0.875rem;
+  --electric: #A855F7;
+  --glow: rgba(168, 85, 247, 0.15);
+
+  --sidebar: #3D1A5E;
+  --sidebar-foreground: #F0E6FF;
+  --sidebar-primary: #A855F7;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #16162A;
-  --sidebar-accent-foreground: #E8E8EC;
-  --sidebar-border: #1E1E35;
-  --sidebar-ring: #0066FF;
+  --sidebar-accent: #4E2572;
+  --sidebar-accent-foreground: #F0E6FF;
+  --sidebar-border: #5A3080;
+  --sidebar-ring: #A855F7;
 }
 
 .dark {
-  /* Dark mode: deep near-black with electric blue */
-  --background: #0A0A0F;
-  --foreground: #E8E8EC;
-  --card: #111118;
-  --card-foreground: #E8E8EC;
-  --popover: #111118;
-  --popover-foreground: #E8E8EC;
-  --primary: #0066FF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #16162A;
-  --secondary-foreground: #C8C8D0;
-  --muted: #16162A;
-  --muted-foreground: #7A7A8E;
-  --accent: #0D1B3E;
-  --accent-foreground: #66A3FF;
-  --destructive: #E53E3E;
-  --border: #1E1E35;
-  --input: #1A1A30;
-  --ring: #0066FF;
-  --chart-1: #0066FF;
-  --chart-2: #3385FF;
-  --chart-3: #66A3FF;
-  --chart-4: #1A3A6E;
-  --chart-5: #003399;
-  --electric: #0066FF;
-  --glow: rgba(0, 102, 255, 0.12);
+  font-size: 17px;
 
-  --sidebar: #07070C;
-  --sidebar-foreground: #E8E8EC;
-  --sidebar-primary: #0066FF;
+  --background: #1A0A2E;
+  --foreground: #F0E6FF;
+  --card: #2A1045;
+  --card-foreground: #F0E6FF;
+  --popover: #2A1045;
+  --popover-foreground: #F0E6FF;
+  --primary: #A855F7;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2A1045;
+  --secondary-foreground: #E0D0F0;
+  --muted: #2A1045;
+  --muted-foreground: #9A7AB0;
+  --accent: #FF5BA0;
+  --accent-foreground: #FFFFFF;
+  --destructive: #E53E3E;
+  --border: #3D1A5E;
+  --input: #321050;
+  --ring: #A855F7;
+  --chart-1: #A855F7;
+  --chart-2: #FF5BA0;
+  --chart-3: #C084FC;
+  --chart-4: #FF8EC4;
+  --chart-5: #7C3AED;
+  --electric: #A855F7;
+  --glow: rgba(168, 85, 247, 0.12);
+
+  --sidebar: #120820;
+  --sidebar-foreground: #F0E6FF;
+  --sidebar-primary: #A855F7;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #12121F;
-  --sidebar-accent-foreground: #E8E8EC;
-  --sidebar-border: #1A1A2E;
-  --sidebar-ring: #0066FF;
+  --sidebar-accent: #1E0E35;
+  --sidebar-accent-foreground: #F0E6FF;
+  --sidebar-border: #2A1045;
+  --sidebar-ring: #A855F7;
 }
 
 @layer base {
@@ -143,9 +144,11 @@
   html {
     @apply font-sans;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), sans-serif;
+  }
 }
 
-/* Utility classes for the electric theme */
 @layer utilities {
   .glow-card {
     box-shadow: 0 0 0 1px var(--border), 0 0 20px var(--glow);
@@ -161,7 +164,7 @@
     background-image: radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0);
     background-size: 32px 32px;
   }
-  .bg-gradient-mesh {
-    background: linear-gradient(135deg, var(--background) 0%, var(--card) 50%, var(--background) 100%);
+  .font-display {
+    font-family: var(--font-display), sans-serif;
   }
 }

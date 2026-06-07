@@ -417,7 +417,7 @@ export default function TodayPage() {
                       <div key={i} className={cn(
                         'rounded-xl p-3 flex items-start gap-3',
                         block.type === 'warmup' ? 'bg-muted/60' :
-                        block.type === 'interval' ? 'bg-orange-500/10 border border-orange-400/20' :
+                        block.type === 'interval' ? 'bg-accent/10 border border-accent/20' :
                         block.type === 'recovery' ? 'bg-muted/40' :
                         block.type === 'cooldown' ? 'bg-muted/60' :
                         'bg-primary/5 border border-primary/10'

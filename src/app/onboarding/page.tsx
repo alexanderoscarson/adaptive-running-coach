@@ -219,7 +219,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left side — branded gradient panel (desktop) */}
-      <div className="hidden md:flex md:w-1/2 lg:w-[45%] bg-gradient-to-br from-primary to-blue-700 items-center justify-center p-12 relative">
+      <div className="hidden md:flex md:w-1/2 lg:w-[45%] bg-gradient-to-br from-primary to-purple-700 items-center justify-center p-12 relative">
         <div className="text-white text-center">
           <div className="text-7xl mb-6">{STEP_TITLES[step].emoji}</div>
           <h2 className="text-4xl font-extrabold tracking-tight leading-tight whitespace-pre-line">{STEP_TITLES[step].title}</h2>
@@ -247,7 +247,7 @@ export default function OnboardingPage() {
         </div>
 
         {/* Mobile gradient strip */}
-        <div className="md:hidden h-24 relative mx-4 mt-4 rounded-2xl overflow-hidden bg-gradient-to-r from-primary to-blue-700 flex items-center justify-center gap-3">
+        <div className="md:hidden h-24 relative mx-4 mt-4 rounded-2xl overflow-hidden bg-gradient-to-r from-primary to-purple-700 flex items-center justify-center gap-3">
           <span className="text-3xl">{STEP_TITLES[step].emoji}</span>
           <span className="text-white font-extrabold text-lg">{STEP_TITLES[step].title.replace('\n', ' ')}</span>
         </div>

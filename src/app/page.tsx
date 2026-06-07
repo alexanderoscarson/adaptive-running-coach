@@ -19,9 +19,8 @@ export default function HomePage() {
 
           <div className="pt-16 md:pt-24 max-w-3xl">
             <p className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-5">Adaptive coaching</p>
-            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tight leading-[0.92]">
-              Running<br />
-              made <span className="text-primary">simple</span>
+            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-display tracking-tight leading-[0.95] uppercase">
+              The training app adjusted for your <span className="text-primary">actual life</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-lg mt-8 leading-relaxed font-semibold">
               Tailored training plans for runners and hybrid athletes. Running, strength, cycling, swimming, tennis and more, all in one coach that adapts to your life.
@@ -49,18 +48,18 @@ export default function HomePage() {
       <section className="relative px-6 py-20 md:py-24">
         <div className="max-w-5xl mx-auto">
           <p className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-3 text-center">Choose your distance</p>
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-display tracking-tight text-center mb-12">
             Find the plan that&apos;s right for you
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {[
-              { distance: '5K', weeks: '8 to 12 weeks', gradient: 'from-emerald-500 to-emerald-600' },
-              { distance: '10K', weeks: '10 to 14 weeks', gradient: 'from-blue-500 to-blue-600' },
-              { distance: 'Half', weeks: '12 to 17 weeks', gradient: 'from-primary to-blue-700' },
-              { distance: 'Marathon', weeks: '16 to 20 weeks', gradient: 'from-indigo-500 to-indigo-700' },
+              { distance: '5K', weeks: '8 to 12 weeks', gradient: 'from-violet-500 to-purple-600' },
+              { distance: '10K', weeks: '10 to 14 weeks', gradient: 'from-fuchsia-500 to-pink-600' },
+              { distance: 'Half', weeks: '12 to 17 weeks', gradient: 'from-primary to-purple-700' },
+              { distance: 'Marathon', weeks: '16 to 20 weeks', gradient: 'from-pink-500 to-rose-600' },
             ].map(d => (
               <Link href="/auth/signup" key={d.distance} className={`group rounded-2xl bg-gradient-to-br ${d.gradient} p-6 md:p-8 text-white hover:scale-[1.03] transition-all shadow-lg hover:shadow-xl`}>
-                <div className="text-3xl md:text-5xl font-black stat-num">{d.distance}</div>
+                <div className="text-3xl md:text-5xl font-display stat-num">{d.distance}</div>
                 <div className="text-xs font-bold mt-2 opacity-70 group-hover:opacity-100 transition-opacity">{d.weeks}</div>
               </Link>
             ))}
@@ -72,7 +71,7 @@ export default function HomePage() {
       <section className="relative py-20 md:py-28 px-6">
         <div className="max-w-5xl mx-auto">
           <p className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-3 text-center">Features</p>
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-display tracking-tight mb-4 text-center">
             Everything a coach does
           </h2>
           <p className="text-muted-foreground text-lg max-w-lg mx-auto text-center mb-14 font-semibold">
@@ -102,7 +101,7 @@ export default function HomePage() {
       <section className="relative py-20 md:py-28 px-6">
         <div className="max-w-3xl mx-auto">
           <p className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-3 text-center">How it works</p>
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-center mb-14">
+          <h2 className="text-3xl md:text-4xl font-display tracking-tight text-center mb-14">
             Ready in 2 minutes
           </h2>
 
@@ -137,7 +136,7 @@ export default function HomePage() {
               { stat: '∞', label: 'Adaptations' },
             ].map(s => (
               <div key={s.label}>
-                <div className="text-3xl md:text-4xl font-black text-primary stat-num">{s.stat}</div>
+                <div className="text-3xl md:text-4xl font-display text-primary stat-num">{s.stat}</div>
                 <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider mt-2">{s.label}</div>
               </div>
             ))}
@@ -148,7 +147,7 @@ export default function HomePage() {
       {/* ===== WHAT'S INCLUDED ===== */}
       <section className="relative py-20 md:py-28 px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-10">What&apos;s included</h2>
+          <h2 className="text-3xl md:text-4xl font-display tracking-tight mb-10">What&apos;s included</h2>
           <div className="grid sm:grid-cols-2 gap-3 text-left">
             {[
               'Personalized periodized plan',
@@ -174,7 +173,7 @@ export default function HomePage() {
       {/* ===== FINAL CTA ===== */}
       <section className="relative py-24 md:py-32 px-6">
         <div className="max-w-lg mx-auto text-center space-y-8">
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight">
+          <h2 className="text-3xl md:text-5xl font-display tracking-tight">
             Your next PR<br />starts <span className="text-primary">here</span>
           </h2>
           <p className="text-muted-foreground text-lg font-semibold">
