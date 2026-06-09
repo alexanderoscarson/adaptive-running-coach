@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addDays } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle2, Circle, Plane, RefreshCw, Target, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, Plane, Target, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import type { PlanIntent, Session, Goal, Constraint } from '@/types/database';
 
 const SESSION_COLORS: Record<string, string> = {
@@ -34,6 +35,7 @@ const PHASE_COLORS: Record<string, string> = {
 };
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEK_DAYS_ORDERED = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
 
 const ACTIVITY_LABELS: Record<string, string> = {
   tennis: 'Tennis', padel: 'Padel', cycling: 'Cycling', swimming: 'Swimming',
@@ -48,6 +50,8 @@ export default function PlanPage() {
   const [goal, setGoal] = useState<Goal | null>(null);
   const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dragOverDay, setDragOverDay] = useState<{ week: number; day: number } | null>(null);
+  const dragSessionRef = useRef<{ session: Session; weekNumber: number } | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -59,7 +63,7 @@ export default function PlanPage() {
 
     const [intentsRes, goalRes, constraintsRes] = await Promise.all([
       supabase.from('plan_intents').select('*').eq('user_id', user.id).order('week_number'),
-      supabase.from('goals').select('*').eq('user_id', user.id).eq('active', true).single(),
+      supabase.from('goals').select('*').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1).single(),
       supabase.from('constraints').select('*').eq('user_id', user.id).eq('active', true),
     ]);
 
@@ -94,7 +98,6 @@ export default function PlanPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId, status: newStatus }),
     });
-    // Update local state
     setSessions(prev => {
       const updated = { ...prev };
       for (const week in updated) {
@@ -106,62 +109,114 @@ export default function PlanPage() {
     });
   }
 
-  // Merge constraint activities into a week's sessions for display
-  function getWeekDisplay(weekSessions: Session[]) {
-    const recurringConstraints = constraints.filter(c => c.type === 'recurring_activity');
-    const displayItems: Array<{
-      id: string;
-      day: number;
-      dayName: string;
-      title: string;
-      subtitle: string;
-      color: string;
-      isSession: boolean;
-      status: string;
-      sessionId?: string;
-    }> = [];
+  // --- Drag and Drop ---
+  function handleDragStart(e: React.DragEvent, session: Session, weekNumber: number) {
+    dragSessionRef.current = { session, weekNumber };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', session.id);
+    const el = e.currentTarget as HTMLElement;
+    el.style.opacity = '0.5';
+  }
 
-    // Add running/strength sessions
-    for (const s of weekSessions) {
-      displayItems.push({
-        id: s.id,
-        day: s.day_of_week,
-        dayName: DAY_NAMES[s.day_of_week] || '?',
-        title: s.title,
-        subtitle: s.distance_km ? `${s.distance_km}km` : s.duration_minutes ? `${s.duration_minutes}m` : '',
-        color: SESSION_COLORS[s.type] || SESSION_COLORS.easy,
-        isSession: true,
-        status: s.status,
-        sessionId: s.id,
-      });
+  function handleDragEnd(e: React.DragEvent) {
+    (e.currentTarget as HTMLElement).style.opacity = '1';
+    setDragOverDay(null);
+    dragSessionRef.current = null;
+  }
+
+  function handleDragOver(e: React.DragEvent, weekNumber: number, dayOfWeek: number) {
+    e.preventDefault();
+    const weekSessions = sessions[weekNumber] || [];
+    const sessionsOnDay = weekSessions.filter(s => s.day_of_week === dayOfWeek);
+    const draggedId = dragSessionRef.current?.session.id;
+    const countExcludingSelf = sessionsOnDay.filter(s => s.id !== draggedId).length;
+    if (countExcludingSelf >= 2) {
+      e.dataTransfer.dropEffect = 'none';
+      return;
     }
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverDay({ week: weekNumber, day: dayOfWeek });
+  }
 
-    // Add constraint activities (tennis, padel, etc.)
-    for (const c of recurringConstraints) {
-      if (c.day_of_week == null) continue;
-      // Don't duplicate if there's already a cross_training session on that day
-      const alreadyHas = displayItems.some(d => d.day === c.day_of_week && !d.isSession);
-      if (alreadyHas) continue;
-      displayItems.push({
-        id: `constraint-${c.id}`,
-        day: c.day_of_week,
-        dayName: DAY_NAMES[c.day_of_week] || '?',
-        title: ACTIVITY_LABELS[c.activity_type || ''] || c.activity_type || 'Activity',
-        subtitle: '',
-        color: SESSION_COLORS.constraint_activity,
-        isSession: false,
-        status: 'planned',
-      });
-    }
+  function handleDragLeave() {
+    setDragOverDay(null);
+  }
 
-    // Sort by day
-    displayItems.sort((a, b) => {
-      const dayA = a.day === 0 ? 7 : a.day;
-      const dayB = b.day === 0 ? 7 : b.day;
-      return dayA - dayB;
+  async function handleDrop(e: React.DragEvent, weekNumber: number, dayOfWeek: number) {
+    e.preventDefault();
+    setDragOverDay(null);
+    const dragData = dragSessionRef.current;
+    if (!dragData || dragData.weekNumber !== weekNumber) return;
+
+    const session = dragData.session;
+    if (session.day_of_week === dayOfWeek) return;
+
+    const weekSessions = sessions[weekNumber] || [];
+    const sessionsOnDay = weekSessions.filter(s => s.day_of_week === dayOfWeek && s.id !== session.id);
+    if (sessionsOnDay.length >= 2) return;
+
+    const oldDay = session.day_of_week;
+    const oldDate = session.session_date;
+
+    // Calculate new date from week start
+    const intent = intents.find(i => i.week_number === weekNumber);
+    if (!intent) return;
+    const weekStart = parseISO(intent.starts_on);
+    const dayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Mon=0 offset
+    const newDate = format(addDays(weekStart, dayOffset), 'yyyy-MM-dd');
+
+    // Optimistic update
+    setSessions(prev => {
+      const updated = { ...prev };
+      updated[weekNumber] = (updated[weekNumber] || []).map(s =>
+        s.id === session.id ? { ...s, day_of_week: dayOfWeek, session_date: newDate } : s
+      );
+      return updated;
     });
 
-    return displayItems;
+    const res = await fetch('/api/sessions', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: session.id, newDayOfWeek: dayOfWeek, newSessionDate: newDate }),
+    });
+
+    if (!res.ok) {
+      // Revert
+      setSessions(prev => {
+        const updated = { ...prev };
+        updated[weekNumber] = (updated[weekNumber] || []).map(s =>
+          s.id === session.id ? { ...s, day_of_week: oldDay, session_date: oldDate } : s
+        );
+        return updated;
+      });
+      toast.error('Failed to move session');
+      return;
+    }
+
+    toast.success(`Session moved to ${DAY_NAMES[dayOfWeek]}`, {
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          setSessions(prev => {
+            const updated = { ...prev };
+            updated[weekNumber] = (updated[weekNumber] || []).map(s =>
+              s.id === session.id ? { ...s, day_of_week: oldDay, session_date: oldDate } : s
+            );
+            return updated;
+          });
+          await fetch('/api/sessions', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: session.id, newDayOfWeek: oldDay, newSessionDate: oldDate }),
+          });
+        },
+      },
+      duration: 5000,
+    });
+  }
+
+  function getConstraintForDay(dayOfWeek: number) {
+    return constraints.find(c => c.type === 'recurring_activity' && c.day_of_week === dayOfWeek);
   }
 
   if (loading) {
@@ -178,7 +233,7 @@ export default function PlanPage() {
     <div className="max-w-lg mx-auto px-4 pt-6 space-y-5 pb-8">
       <h1 className="text-2xl font-bold text-center">Your Plan</h1>
 
-      {/* Goal banner — Runna style */}
+      {/* Goal banner */}
       {goal && (
         <Card className="bg-gradient-to-br from-primary/15 to-primary/5 border-primary/20">
           <CardContent className="py-5 px-5">
@@ -192,7 +247,6 @@ export default function PlanPage() {
               </div>
             </div>
 
-            {/* Week dots */}
             <div className="flex gap-1 mt-4">
               {intents.map(i => (
                 <div key={i.id} className={cn(
@@ -223,7 +277,7 @@ export default function PlanPage() {
             const isExpanded = expandedWeek === intent.week_number;
             const isVacation = intent.week_state === 'vacation';
             const isCurrent = intent.week_state === 'current';
-            const weekItems = sessions[intent.week_number] ? getWeekDisplay(sessions[intent.week_number]) : [];
+            const weekSessions = sessions[intent.week_number] || [];
             const weekStart = format(parseISO(intent.starts_on), 'd MMM').toUpperCase();
             const weekEndDate = new Date(intent.starts_on);
             weekEndDate.setDate(weekEndDate.getDate() + 6);
@@ -241,10 +295,7 @@ export default function PlanPage() {
               >
                 <button onClick={() => toggleWeek(intent.week_number)} className="w-full text-left">
                   <CardContent className="py-4 px-5">
-                    {/* Date range */}
                     <p className="text-xs font-bold text-primary tracking-wide">{weekStart} - {weekEnd}</p>
-
-                    {/* Week title + phase */}
                     <div className="flex items-center gap-2 mt-1">
                       <h3 className="text-lg font-extrabold">Week {intent.week_number}</h3>
                       <Badge variant="secondary" className={cn('text-[10px] font-bold px-2 py-0', PHASE_COLORS[intent.phase])}>
@@ -254,19 +305,17 @@ export default function PlanPage() {
                       {isVacation && <Plane className="h-4 w-4 text-sky-500" />}
                     </div>
 
-                    {/* Session progress bar segments */}
-                    {isExpanded && weekItems.length > 0 && (
+                    {isExpanded && weekSessions.length > 0 && (
                       <div className="flex gap-1 mt-3">
-                        {weekItems.map(item => (
-                          <div key={item.id} className={cn(
+                        {weekSessions.map(s => (
+                          <div key={s.id} className={cn(
                             'flex-1 h-2 rounded-full',
-                            item.status === 'completed' ? item.color : 'bg-muted-foreground/15'
+                            s.status === 'completed' ? SESSION_COLORS[s.type] || SESSION_COLORS.easy : 'bg-muted-foreground/15'
                           )} />
                         ))}
                       </div>
                     )}
 
-                    {/* Summary stats */}
                     <div className="flex gap-4 mt-2">
                       <p className="text-xs text-muted-foreground">
                         <span className="font-bold text-foreground">{intent.total_distance_km}</span>km
@@ -278,49 +327,98 @@ export default function PlanPage() {
                   </CardContent>
                 </button>
 
-                {/* Expanded: session list */}
+                {/* Expanded: day-column layout with drag-and-drop */}
                 {isExpanded && (
-                  <div className="px-5 pb-4 space-y-1">
-                    {weekItems.length === 0 ? (
+                  <div className="px-5 pb-4">
+                    {weekSessions.length === 0 ? (
                       <p className="text-xs text-muted-foreground py-2">Loading sessions…</p>
                     ) : (
-                      weekItems.map(item => (
-                        <div
-                          key={item.id}
-                          className={cn(
-                            'flex items-center gap-3 py-2.5 px-1',
-                            item.status === 'completed' && 'opacity-60'
-                          )}
-                        >
-                          {/* Color dot */}
-                          <div className={cn('w-3 h-3 rounded-sm shrink-0', item.color)} />
+                      <div className="grid grid-cols-7 gap-1">
+                        {WEEK_DAYS_ORDERED.map(dayOfWeek => {
+                          const daySessions = weekSessions.filter(s => s.day_of_week === dayOfWeek);
+                          const constraint = getConstraintForDay(dayOfWeek);
+                          const isDragOver = dragOverDay?.week === intent.week_number && dragOverDay?.day === dayOfWeek;
+                          const draggedId = dragSessionRef.current?.session.id;
+                          const isFull = daySessions.filter(s => s.id !== draggedId).length >= 2;
 
-                          {/* Day */}
-                          <span className="text-xs font-bold w-8 text-muted-foreground">{item.dayName}</span>
-
-                          {/* Title + subtitle */}
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-bold">{item.title}</span>
-                            {item.subtitle && (
-                              <span className="text-sm text-muted-foreground ml-1.5">· {item.subtitle}</span>
-                            )}
-                          </div>
-
-                          {/* Checkbox */}
-                          {item.isSession && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); toggleSessionComplete(item.sessionId!, item.status); }}
-                              className="shrink-0 p-0.5"
-                            >
-                              {item.status === 'completed' ? (
-                                <CheckCircle2 className="h-5 w-5 text-primary" />
-                              ) : (
-                                <Circle className="h-5 w-5 text-muted-foreground/40 hover:text-primary/60 transition-colors" />
+                          return (
+                            <div
+                              key={dayOfWeek}
+                              className={cn(
+                                'rounded-lg p-1 min-h-[80px] transition-colors border border-transparent',
+                                isDragOver && !isFull && 'border-primary/50 bg-primary/5',
+                                isDragOver && isFull && 'border-destructive/50 bg-destructive/5',
                               )}
-                            </button>
-                          )}
-                        </div>
-                      ))
+                              onDragOver={(e) => handleDragOver(e, intent.week_number, dayOfWeek)}
+                              onDragLeave={handleDragLeave}
+                              onDrop={(e) => handleDrop(e, intent.week_number, dayOfWeek)}
+                            >
+                              <p className="text-[10px] font-bold text-muted-foreground text-center mb-1">
+                                {DAY_NAMES[dayOfWeek]}
+                              </p>
+
+                              {isFull && isDragOver && (
+                                <p className="text-[8px] text-destructive text-center font-semibold">Full</p>
+                              )}
+
+                              {daySessions.map(session => (
+                                <div
+                                  key={session.id}
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, session, intent.week_number)}
+                                  onDragEnd={handleDragEnd}
+                                  className={cn(
+                                    'rounded-md p-1.5 mb-1 cursor-grab active:cursor-grabbing transition-opacity group',
+                                    session.status === 'completed' ? 'opacity-60' : '',
+                                    'bg-card border shadow-sm hover:shadow-md'
+                                  )}
+                                >
+                                  <div className="flex items-start gap-1">
+                                    <div className={cn('w-2 h-2 rounded-sm shrink-0 mt-0.5', SESSION_COLORS[session.type] || SESSION_COLORS.easy)} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[10px] font-bold leading-tight truncate">{session.title}</p>
+                                      {session.distance_km && (
+                                        <p className="text-[9px] text-muted-foreground">{session.distance_km}km</p>
+                                      )}
+                                      {!session.distance_km && session.duration_minutes && (
+                                        <p className="text-[9px] text-muted-foreground">{session.duration_minutes}m</p>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); toggleSessionComplete(session.id, session.status); }}
+                                      className="shrink-0"
+                                    >
+                                      {session.status === 'completed' ? (
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                                      ) : (
+                                        <Circle className="h-3.5 w-3.5 text-muted-foreground/30 hover:text-primary/60 transition-colors" />
+                                      )}
+                                    </button>
+                                  </div>
+                                  <GripVertical className="h-3 w-3 text-muted-foreground/20 mx-auto mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              ))}
+
+                              {constraint && (
+                                <div className="rounded-md p-1.5 mb-1 bg-pink-50 dark:bg-pink-950/30 border border-pink-200 dark:border-pink-800/40">
+                                  <div className="flex items-center gap-1">
+                                    <div className={cn('w-2 h-2 rounded-sm shrink-0', SESSION_COLORS.constraint_activity)} />
+                                    <p className="text-[10px] font-bold leading-tight truncate">
+                                      {ACTIVITY_LABELS[constraint.activity_type || ''] || constraint.activity_type || 'Activity'}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {daySessions.length === 0 && !constraint && (
+                                <div className="flex items-center justify-center h-10 text-muted-foreground/20">
+                                  <p className="text-[9px]">Rest</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 )}

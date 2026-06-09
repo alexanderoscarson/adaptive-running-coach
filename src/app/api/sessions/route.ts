@@ -46,3 +46,37 @@ export async function PATCH(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }
+
+export async function PUT(request: NextRequest) {
+  const supabase = await createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { sessionId, newDayOfWeek, newSessionDate } = await request.json();
+
+  const { data: existing } = await supabase
+    .from('sessions')
+    .select('week_number')
+    .eq('user_id', user.id)
+    .eq('day_of_week', newDayOfWeek)
+    .eq('week_number', (await supabase.from('sessions').select('week_number').eq('id', sessionId).eq('user_id', user.id).single()).data?.week_number ?? 0);
+
+  if (existing && existing.length >= 2) {
+    return NextResponse.json({ error: 'Day is full (max 2 sessions)' }, { status: 409 });
+  }
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .update({
+      day_of_week: newDayOfWeek,
+      session_date: newSessionDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', sessionId)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
+}

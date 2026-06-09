@@ -8,10 +8,11 @@ export async function POST() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const [profileRes, goalRes, constraintsRes] = await Promise.all([
+  const [profileRes, goalRes, constraintsRes, lifeActivitiesRes] = await Promise.all([
     supabase.from('user_profiles').select('*').eq('id', user.id).single(),
     supabase.from('goals').select('*').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1).single(),
     supabase.from('constraints').select('*').eq('user_id', user.id).eq('active', true),
+    supabase.from('life_activities').select('*').eq('user_id', user.id).eq('active', true),
   ]);
 
   if (!profileRes.data || !goalRes.data) {
@@ -29,7 +30,9 @@ export async function POST() {
     }, { status: 404 });
   }
 
-  const plan = generatePlan(profileRes.data, goalRes.data, constraintsRes.data || []);
+  console.log('[PlanGenerate] Profile runs_per_week:', profileRes.data.runs_per_week, '| available_days:', profileRes.data.available_days, '| life_activities:', (lifeActivitiesRes.data || []).map((la: { activity_type: string; details: unknown }) => ({ type: la.activity_type, details: la.details })));
+
+  const plan = generatePlan(profileRes.data, goalRes.data, constraintsRes.data || [], lifeActivitiesRes.data || []);
 
   // Delete existing plan
   await supabase.from('sessions').delete().eq('user_id', user.id);

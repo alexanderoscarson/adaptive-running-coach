@@ -1,8 +1,13 @@
 import type {
-  UserProfile, Goal, Constraint, PlanPhase, SessionType,
+  UserProfile, Goal, Constraint, LifeActivity, PlanPhase, SessionType,
   SessionBlock, RaceDistance
 } from '@/types/database';
 import { addDays, format, startOfWeek, getDay } from 'date-fns';
+
+const DAY_KEY_TO_NUMBER: Record<string, number> = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
+};
 
 interface WeekPlan {
   weekNumber: number;
@@ -88,7 +93,8 @@ function isRecoveryWeek(weekInPhase: number): boolean {
 export function generatePlan(
   profile: UserProfile,
   goal: Goal,
-  constraints: Constraint[]
+  constraints: Constraint[],
+  lifeActivities: LifeActivity[] = []
 ): WeekPlan[] {
   const totalWeeks = goal.plan_weeks || 17;
   const raceDistance = goal.race_distance || 'half_marathon';
@@ -124,6 +130,22 @@ export function generatePlan(
   );
 
   const constrainedDays = new Set(recurringConstraints.map(c => c.day_of_week));
+
+  // Merge life activity days (gym, team sport) into constrained days
+  for (const la of lifeActivities) {
+    if (!la.active) continue;
+    if (la.activity_type !== 'gym' && la.activity_type !== 'team_sport') continue;
+    const days = (la.details as Record<string, unknown>)?.days;
+    if (Array.isArray(days)) {
+      for (const dayKey of days) {
+        const dayNum = DAY_KEY_TO_NUMBER[dayKey as string];
+        if (dayNum !== undefined) constrainedDays.add(dayNum);
+      }
+    }
+  }
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  console.log('[PlanGenerator] runsPerWeek:', runsPerWeek, '| availableDays:', availableDays.map(d => dayNames[d]).join(', '), '| constrainedDays:', [...constrainedDays].map(d => d != null ? dayNames[d] : '?').join(', '));
 
   const weeks: WeekPlan[] = [];
   let globalWeek = 0;
@@ -272,7 +294,7 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
   }
 
   const sessions: PlannedSession[] = [];
-  const runDays = availableDays.filter(d => !constrainedDays.has(d)).slice(0, Math.min(runsPerWeek + 1, 6));
+  const runDays = availableDays.filter(d => !constrainedDays.has(d)).slice(0, Math.min(runsPerWeek, 6));
 
   if (!runDays.includes(longRunDay) && availableDays.includes(longRunDay)) {
     runDays.push(longRunDay);
