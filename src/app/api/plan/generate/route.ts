@@ -10,12 +10,23 @@ export async function POST() {
 
   const [profileRes, goalRes, constraintsRes] = await Promise.all([
     supabase.from('user_profiles').select('*').eq('id', user.id).single(),
-    supabase.from('goals').select('*').eq('user_id', user.id).eq('active', true).single(),
+    supabase.from('goals').select('*').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1).single(),
     supabase.from('constraints').select('*').eq('user_id', user.id).eq('active', true),
   ]);
 
   if (!profileRes.data || !goalRes.data) {
-    return NextResponse.json({ error: 'Profile or goal not found' }, { status: 404 });
+    const details = {
+      userId: user.id,
+      profileFound: !!profileRes.data,
+      profileError: profileRes.error?.message || null,
+      goalFound: !!goalRes.data,
+      goalError: goalRes.error?.message || null,
+    };
+    console.error('Plan generation failed: missing data', details);
+    return NextResponse.json({
+      error: `Plan generation failed: ${!profileRes.data ? 'user profile not found' : 'no active goal found'} (user: ${user.id.slice(0, 8)}...)`,
+      details,
+    }, { status: 404 });
   }
 
   const plan = generatePlan(profileRes.data, goalRes.data, constraintsRes.data || []);
