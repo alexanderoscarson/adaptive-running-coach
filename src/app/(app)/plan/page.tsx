@@ -85,6 +85,7 @@ export default function PlanPage() {
   const [detailDay, setDetailDay] = useState<{ dayName: string; date: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const dragSessionRef = useRef<{ session: Session; weekNumber: number } | null>(null);
+  const dragActivityRef = useRef<{ activity: LifeActivity | Constraint; dayOfWeek: number; weekNumber: number } | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -183,11 +184,20 @@ export default function PlanPage() {
     setDeleteConfirm(null);
   }
 
-  // --- Drag and Drop (all session types) ---
+  // --- Drag and Drop (all session types + life activities) ---
   function handleDragStart(e: React.DragEvent, session: Session, weekNumber: number) {
     dragSessionRef.current = { session, weekNumber };
+    dragActivityRef.current = null;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', session.id);
+    (e.currentTarget as HTMLElement).style.opacity = '0.5';
+  }
+
+  function handleActivityDragStart(e: React.DragEvent, activity: LifeActivity | Constraint, dayOfWeek: number, weekNumber: number) {
+    dragActivityRef.current = { activity, dayOfWeek, weekNumber };
+    dragSessionRef.current = null;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', 'activity');
     (e.currentTarget as HTMLElement).style.opacity = '0.5';
   }
 
@@ -195,6 +205,7 @@ export default function PlanPage() {
     (e.currentTarget as HTMLElement).style.opacity = '1';
     setDragOverDay(null);
     dragSessionRef.current = null;
+    dragActivityRef.current = null;
   }
 
   function handleDragOver(e: React.DragEvent, weekNumber: number, dayOfWeek: number) {
@@ -218,6 +229,49 @@ export default function PlanPage() {
   async function handleDrop(e: React.DragEvent, weekNumber: number, dayOfWeek: number) {
     e.preventDefault();
     setDragOverDay(null);
+
+    // Handle life activity drop
+    if (dragActivityRef.current) {
+      const actData = dragActivityRef.current;
+      dragActivityRef.current = null;
+      if (actData.dayOfWeek === dayOfWeek) return;
+
+      const oldDay = actData.dayOfWeek;
+      const dayKeyMap: Record<number, string> = { 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday', 5: 'friday', 6: 'saturday' };
+      const newDayKey = dayKeyMap[dayOfWeek];
+      const oldDayKey = dayKeyMap[oldDay];
+      const activity = actData.activity;
+
+      // Determine if it's a Constraint or LifeActivity and update accordingly
+      if ('day_of_week' in activity && 'type' in activity && (activity as Constraint).type === 'recurring_activity') {
+        // It's a Constraint — update via PATCH
+        const res = await fetch('/api/constraints', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ constraintId: (activity as Constraint).id, day_of_week: dayOfWeek }),
+        });
+        if (res.ok) {
+          setConstraints(prev => prev.map(c => c.id === (activity as Constraint).id ? { ...c, day_of_week: dayOfWeek } : c));
+          toast.success(`Activity moved to ${DAY_NAMES[dayOfWeek]}`, { duration: 5000 });
+        } else {
+          toast.error('Failed to move activity');
+        }
+      } else {
+        // It's a LifeActivity — update days array in details
+        const la = activity as LifeActivity;
+        const days = ((la.details as Record<string, unknown>)?.days as string[]) || [];
+        const newDays = days.map(d => d === oldDayKey ? newDayKey : d);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('life_activities').update({ details: { ...la.details as object, days: newDays } }).eq('id', la.id).eq('user_id', user.id);
+          setLifeActivities(prev => prev.map(l => l.id === la.id ? { ...l, details: { ...l.details as object, days: newDays } } : l));
+          toast.success(`Activity moved to ${DAY_NAMES[dayOfWeek]}`, { duration: 5000 });
+        }
+      }
+      return;
+    }
+
+    // Handle session drop
     const dragData = dragSessionRef.current;
     if (!dragData || dragData.weekNumber !== weekNumber) return;
     const session = dragData.session;
@@ -535,10 +589,13 @@ export default function PlanPage() {
                                 </div>
                               ))}
 
-                              {/* Life activity / constraint card — also tappable */}
+                              {/* Life activity / constraint card — tappable + draggable */}
                               {lifeActivity && (
                                 <div
-                                  className="rounded-md p-1.5 mb-1 bg-pink-50 dark:bg-pink-950/30 border border-pink-200 dark:border-pink-800/40 cursor-pointer hover:shadow-sm transition-shadow"
+                                  draggable
+                                  onDragStart={(e) => handleActivityDragStart(e, lifeActivity, dayOfWeek, intent.week_number)}
+                                  onDragEnd={handleDragEnd}
+                                  className="rounded-md p-1.5 mb-1 bg-pink-50 dark:bg-pink-950/30 border border-pink-200 dark:border-pink-800/40 cursor-grab active:cursor-grabbing hover:shadow-sm transition-shadow group"
                                   onClick={() => openActivityDetail(lifeActivity, dayOfWeek, intent.week_number)}
                                 >
                                   <div className="flex items-center gap-1">

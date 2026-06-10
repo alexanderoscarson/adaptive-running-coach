@@ -21,9 +21,16 @@ interface UserRaceRow {
   is_custom: boolean;
 }
 
+interface GoalRow {
+  id: string;
+  race_distance: string | null;
+  race_date: string | null;
+}
+
 export default function RacesPage() {
   const supabase = createClient();
   const [userRaces, setUserRaces] = useState<UserRaceRow[]>([]);
+  const [goalFallback, setGoalFallback] = useState<GoalRow | null>(null);
   const [query, setQuery] = useState('');
   const [sportFilter, setSportFilter] = useState<Sport | ''>('');
   const [showLibrary, setShowLibrary] = useState(false);
@@ -37,8 +44,16 @@ export default function RacesPage() {
   async function loadUserRaces() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase.from('user_races').select('*').eq('user_id', user.id).eq('active', true);
-    if (data) setUserRaces(data);
+    const [racesRes, goalRes] = await Promise.all([
+      supabase.from('user_races').select('*').eq('user_id', user.id).eq('active', true),
+      supabase.from('goals').select('id, race_distance, race_date').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1).single(),
+    ]);
+    if (racesRes.data && racesRes.data.length > 0) {
+      setUserRaces(racesRes.data);
+    } else if (goalRes.data?.race_distance) {
+      // Fallback: show the goal as a race even if user_races is empty (FK failure)
+      setGoalFallback(goalRes.data);
+    }
   }
 
   async function addRace(race: Race) {
@@ -81,11 +96,27 @@ export default function RacesPage() {
       {/* User's races */}
       <div className="space-y-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{sv ? 'Dina lopp' : 'Your races'}</h2>
-        {userRaces.length === 0 ? (
+        {userRaces.length === 0 && !goalFallback ? (
           <Card>
             <CardContent className="p-6 text-center text-muted-foreground">
               <Trophy className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">{sv ? 'Inga lopp ännu. Bläddra i biblioteket nedan.' : 'No races yet. Browse the library below to add one.'}</p>
+            </CardContent>
+          </Card>
+        ) : userRaces.length === 0 && goalFallback ? (
+          /* Show goal as fallback race card */
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <span className="text-2xl">🏃</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm truncate">
+                  {({ '5k': '5K', '10k': '10K', 'half_marathon': 'Half Marathon', 'marathon': 'Marathon' } as Record<string, string>)[goalFallback.race_distance || ''] || goalFallback.race_distance || 'Race'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {({ '5k': 5, '10k': 10, 'half_marathon': 21.1, 'marathon': 42.2 } as Record<string, number>)[goalFallback.race_distance || ''] || 0}km · Running
+                  {goalFallback.race_date && <> · <Calendar className="inline h-3 w-3 mx-0.5" />{goalFallback.race_date}</>}
+                </p>
+              </div>
             </CardContent>
           </Card>
         ) : (

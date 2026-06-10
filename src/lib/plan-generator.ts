@@ -144,8 +144,28 @@ export function generatePlan(
     }
   }
 
+  // Collect user-specified strength days from constraints and life_activities
+  const userStrengthDays: number[] = [];
+  for (const c of recurringConstraints) {
+    if (c.activity_type === 'generic_strength' && c.day_of_week != null) {
+      userStrengthDays.push(c.day_of_week);
+    }
+  }
+  for (const la of lifeActivities) {
+    if (!la.active || la.activity_type !== 'gym') continue;
+    const days = (la.details as Record<string, unknown>)?.days;
+    if (Array.isArray(days)) {
+      for (const dayKey of days) {
+        const dayNum = DAY_KEY_TO_NUMBER[dayKey as string];
+        if (dayNum !== undefined && !userStrengthDays.includes(dayNum)) {
+          userStrengthDays.push(dayNum);
+        }
+      }
+    }
+  }
+
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  console.log('[PlanGenerator] runsPerWeek:', runsPerWeek, '| availableDays:', availableDays.map(d => dayNames[d]).join(', '), '| constrainedDays:', [...constrainedDays].map(d => d != null ? dayNames[d] : '?').join(', '));
+  console.log('[PlanGenerator] runsPerWeek:', runsPerWeek, '| availableDays:', availableDays.map(d => dayNames[d]).join(', '), '| constrainedDays:', [...constrainedDays].map(d => d != null ? dayNames[d] : '?').join(', '), '| userStrengthDays:', userStrengthDays.map(d => dayNames[d]).join(', '));
 
   const weeks: WeekPlan[] = [];
   let globalWeek = 0;
@@ -218,6 +238,7 @@ export function generatePlan(
         weekStart,
         strengthPreference: profile.strength_preference || 'none',
         raceDistance,
+        userStrengthDays,
       });
 
       weeks.push({
@@ -265,13 +286,14 @@ interface WeekSessionParams {
   weekStart: Date;
   strengthPreference: string;
   raceDistance: string;
+  userStrengthDays: number[]; // Only place strength on these days (from constraints/life_activities)
 }
 
 function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
   const {
     phase, totalDistance, longRunKm, qualitySessions, recovery, isVacation,
     availableDays, longRunDay, constrainedDays, paces, runsPerWeek,
-    weekNumber, weekStart, strengthPreference, raceDistance,
+    weekNumber, weekStart, strengthPreference, raceDistance, userStrengthDays,
   } = params;
 
   if (isVacation) {
@@ -388,13 +410,12 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
     }
   }
 
-  if (strengthPreference !== 'none' && !isVacation) {
-    // Skip adding strength if user already has a generic_strength constraint
-    const hasStrengthConstraint = constrainedDays.has(null) ? false : Array.from(constrainedDays).length > 0;
-    const strengthDay = runDays.find(d => !sessions.some(s => s.dayOfWeek === d) && !constrainedDays.has(d))
-      || (availableDays.find(d => !sessions.some(s => s.dayOfWeek === d) && !constrainedDays.has(d)));
-    if (strengthDay !== undefined) {
-      sessions.push(createStrengthSession(phase, strengthPreference, strengthDay));
+  // Only add strength sessions on user-specified strength days — never auto-generate on other days
+  if (strengthPreference !== 'none' && !isVacation && userStrengthDays.length > 0) {
+    for (const sDay of userStrengthDays) {
+      if (!sessions.some(s => s.dayOfWeek === sDay)) {
+        sessions.push(createStrengthSession(phase, strengthPreference, sDay));
+      }
     }
   }
 
@@ -422,6 +443,16 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
     if (constrainedDays.has(sessions[i].dayOfWeek)) {
       console.log(`[PlanGenerator] Removing session on constrained day ${sessions[i].dayOfWeek} for week ${weekNumber}`);
       sessions.splice(i, 1);
+    }
+  }
+
+  // 3. Strip any strength sessions on days NOT in userStrengthDays
+  if (userStrengthDays.length > 0) {
+    for (let i = sessions.length - 1; i >= 0; i--) {
+      if (sessions[i].type === 'strength' && !userStrengthDays.includes(sessions[i].dayOfWeek)) {
+        console.warn(`[PlanGenerator] Removing unauthorized strength session on day ${sessions[i].dayOfWeek} for week ${weekNumber} — only allowed on [${userStrengthDays.join(',')}]`);
+        sessions.splice(i, 1);
+      }
     }
   }
 
