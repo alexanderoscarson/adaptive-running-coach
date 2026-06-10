@@ -3,16 +3,22 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { generatePlan } from '@/lib/plan-generator';
 import { format, addDays } from 'date-fns';
 
+const DAY_KEY_TO_NAME: Record<string, string> = {
+  sunday: 'Sundays', monday: 'Mondays', tuesday: 'Tuesdays', wednesday: 'Wednesdays',
+  thursday: 'Thursdays', friday: 'Fridays', saturday: 'Saturdays',
+};
+
 export async function POST() {
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const [profileRes, goalRes, constraintsRes, lifeActivitiesRes] = await Promise.all([
+  const [profileRes, goalRes, constraintsRes, lifeActivitiesRes, userRacesRes] = await Promise.all([
     supabase.from('user_profiles').select('*').eq('id', user.id).single(),
     supabase.from('goals').select('*').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1).single(),
     supabase.from('constraints').select('*').eq('user_id', user.id).eq('active', true),
     supabase.from('life_activities').select('*').eq('user_id', user.id).eq('active', true),
+    supabase.from('user_races').select('*').eq('user_id', user.id).eq('active', true).limit(1),
   ]);
 
   if (!profileRes.data || !goalRes.data) {
@@ -33,6 +39,14 @@ export async function POST() {
   console.log('[PlanGenerate] Profile runs_per_week:', profileRes.data.runs_per_week, '| available_days:', profileRes.data.available_days, '| life_activities:', (lifeActivitiesRes.data || []).map((la: { activity_type: string; details: unknown }) => ({ type: la.activity_type, details: la.details })));
 
   const plan = generatePlan(profileRes.data, goalRes.data, constraintsRes.data || [], lifeActivitiesRes.data || []);
+
+  // Log validation: check session counts per week
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  for (const week of plan.slice(0, 3)) {
+    const runTypes = ['easy', 'long', 'tempo', 'intervals', 'hills', 'recovery', 'race'];
+    const runs = week.sessions.filter(s => runTypes.includes(s.type));
+    console.log(`[PlanGenerate] Week ${week.weekNumber}: ${runs.length} runs on [${runs.map(s => dayNames[s.dayOfWeek]).join(', ')}], total sessions: ${week.sessions.length}`);
+  }
 
   // Delete existing plan
   await supabase.from('sessions').delete().eq('user_id', user.id);
@@ -81,5 +95,40 @@ export async function POST() {
     }
   }
 
-  return NextResponse.json({ success: true, weeks: plan.length });
+  // Generate plan explanation from user data
+  const raceName = (userRacesRes.data?.[0]?.custom_name) || goalRes.data.race_distance?.replace('_', ' ') || 'your race';
+  const totalWeeks = plan.length;
+  const lifeActivities = lifeActivitiesRes.data || [];
+
+  const activityNotes: string[] = [];
+  for (const la of lifeActivities) {
+    if (!la.active) continue;
+    const days = (la.details as Record<string, unknown>)?.days;
+    if (Array.isArray(days) && days.length > 0) {
+      const dayNamesList = days.map((d: string) => DAY_KEY_TO_NAME[d] || d).join(' and ');
+      if (la.activity_type === 'team_sport') {
+        activityNotes.push(`you play ${la.sport_name || 'team sport'} on ${dayNamesList}`);
+      } else if (la.activity_type === 'gym') {
+        activityNotes.push(`you do strength training on ${dayNamesList}`);
+      }
+    }
+  }
+
+  const activityClause = activityNotes.length > 0
+    ? `Since ${activityNotes.join(' and ')}, I've structured your week to avoid scheduling hard runs on or next to those days.`
+    : `I've spread your sessions across the week to balance training and recovery.`;
+
+  const runsPerWeek = profileRes.data.runs_per_week || 3;
+  const explanation = `Here's your ${totalWeeks}-week training plan for ${raceName}. ${activityClause} You'll run ${runsPerWeek} times per week, starting with a base-building phase focused on aerobic fitness, before introducing more intensity closer to race day. The plan includes recovery weeks every 3–4 weeks to let your body absorb the training.`;
+
+  // Save explanation as a coach message with special action_type
+  await supabase.from('coach_messages').insert({
+    user_id: user.id,
+    role: 'assistant',
+    content: explanation,
+    action_type: 'none',
+    action_data: { type: 'plan_explanation', race_name: raceName, total_weeks: totalWeeks },
+  });
+
+  return NextResponse.json({ success: true, weeks: plan.length, explanation, raceName });
 }

@@ -294,12 +294,22 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
   }
 
   const sessions: PlannedSession[] = [];
-  const runDays = availableDays.filter(d => !constrainedDays.has(d)).slice(0, Math.min(runsPerWeek, 6));
+  const candidateDays = availableDays.filter(d => !constrainedDays.has(d));
+  let runDays = candidateDays.slice(0, Math.min(runsPerWeek, 6));
 
-  if (!runDays.includes(longRunDay) && availableDays.includes(longRunDay)) {
-    runDays.push(longRunDay);
+  // Ensure longRunDay is included — but REPLACE, don't add, to keep exactly runsPerWeek
+  if (!runDays.includes(longRunDay) && availableDays.includes(longRunDay) && !constrainedDays.has(longRunDay)) {
+    if (runDays.length >= runsPerWeek) {
+      // Replace the last non-long-run day
+      runDays[runDays.length - 1] = longRunDay;
+    } else {
+      runDays.push(longRunDay);
+    }
     runDays.sort((a, b) => a - b);
   }
+
+  // Hard cap: never exceed runsPerWeek
+  runDays = runDays.slice(0, runsPerWeek);
 
   const longRunAdded = runDays.includes(longRunDay);
   let remainingDistance = totalDistance;
@@ -389,6 +399,32 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
   }
 
   sessions.sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+
+  // POST-GENERATION VALIDATION
+  // 1. Enforce exact run count — trim excess run sessions
+  const runTypes: SessionType[] = ['easy', 'long', 'tempo', 'intervals', 'hills', 'recovery', 'race'];
+  const runSessions = sessions.filter(s => runTypes.includes(s.type));
+  if (runSessions.length > runsPerWeek && phase !== 'race') {
+    const excess = runSessions.length - runsPerWeek;
+    // Remove the last N easy/recovery runs (keep quality + long)
+    let removed = 0;
+    for (let i = sessions.length - 1; i >= 0 && removed < excess; i--) {
+      if (sessions[i].type === 'easy' || sessions[i].type === 'recovery') {
+        sessions.splice(i, 1);
+        removed++;
+      }
+    }
+    console.log(`[PlanGenerator] Trimmed ${removed} excess run sessions for week ${weekNumber}`);
+  }
+
+  // 2. Ensure no sessions land on constrained days
+  for (let i = sessions.length - 1; i >= 0; i--) {
+    if (constrainedDays.has(sessions[i].dayOfWeek)) {
+      console.log(`[PlanGenerator] Removing session on constrained day ${sessions[i].dayOfWeek} for week ${weekNumber}`);
+      sessions.splice(i, 1);
+    }
+  }
+
   return sessions;
 }
 

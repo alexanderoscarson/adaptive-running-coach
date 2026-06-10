@@ -324,25 +324,34 @@ export default function OnboardingPage() {
         console.log('[Onboarding] Extended profile updated');
       }
 
-      // 2. Save user_races
+      // 2. Save user_races — always store name/sport/distance for display,
+      //    even for library races (FK to races table may not be seeded)
       console.log('[Onboarding] Saving races...');
+      // Clean up old user_races from previous onboarding attempts
+      await supabase.from('user_races').update({ active: false }).eq('user_id', user.id).eq('active', true);
       for (const race of selectedRaces) {
-        const raceInsert = race.id.startsWith('custom-')
-          ? await supabase.from('user_races').insert({
-              user_id: user.id,
-              custom_name: race.name,
-              custom_sport: race.sport,
-              custom_distance_km: race.distanceKm,
-              target_date: customRace.date || null,
-              is_custom: true,
-            })
-          : await supabase.from('user_races').insert({
-              user_id: user.id,
-              race_id: race.id,
-              target_date: null,
-              is_custom: false,
-            });
-        if (raceInsert.error) console.warn('[Onboarding] Race insert warning:', raceInsert.error);
+        const raceInsert = await supabase.from('user_races').insert({
+          user_id: user.id,
+          race_id: race.id.startsWith('custom-') ? null : race.id,
+          custom_name: race.name,
+          custom_sport: race.sport,
+          custom_distance_km: race.distanceKm,
+          target_date: race.id.startsWith('custom-') ? (customRace.date || null) : null,
+          is_custom: race.id.startsWith('custom-'),
+        });
+        if (raceInsert.error) {
+          console.warn('[Onboarding] Race insert with race_id failed, retrying without FK:', raceInsert.error.message);
+          // Retry without race_id (FK may not be seeded)
+          await supabase.from('user_races').insert({
+            user_id: user.id,
+            race_id: null,
+            custom_name: race.name,
+            custom_sport: race.sport,
+            custom_distance_km: race.distanceKm,
+            target_date: null,
+            is_custom: true,
+          });
+        }
       }
       console.log('[Onboarding] Races saved:', selectedRaces.length);
 
@@ -455,10 +464,20 @@ export default function OnboardingPage() {
 
   const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
-  // Estimates for summary
-  const weeksUntilFirstRace = selectedRaces.length > 0
-    ? Math.max(4, Math.round((new Date(2027, selectedRaces[0].month - 1, 1).getTime() - Date.now()) / (7 * 24 * 60 * 60 * 1000)))
-    : 17;
+  // Estimates for summary — use next occurrence of the race month
+  const weeksUntilFirstRace = (() => {
+    if (selectedRaces.length === 0) return 17;
+    const now = new Date();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const raceMonth = selectedRaces[0].month - 1; // 0-indexed
+    let raceYear = now.getFullYear();
+    // If the race month has already passed this year, use next year
+    if (raceMonth < now.getMonth() || (raceMonth === now.getMonth() && now.getDate() > 15)) {
+      raceYear++;
+    }
+    const raceDate = new Date(raceYear, raceMonth, 1);
+    return Math.max(4, Math.ceil((raceDate.getTime() - todayMidnight.getTime()) / (7 * 24 * 60 * 60 * 1000)));
+  })();
   const estimatedHours = Math.round(daysPerWeek * (sessionLength === '30-45' ? 0.6 : sessionLength === '45-60' ? 0.85 : sessionLength === '60-90' ? 1.25 : 1.75) * 10) / 10;
 
   return (
