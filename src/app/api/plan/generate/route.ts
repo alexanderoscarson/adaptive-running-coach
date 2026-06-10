@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { generatePlan } from '@/lib/plan-generator';
+import { RACES } from '@/lib/races';
 import { format, addDays } from 'date-fns';
 
 const DAY_KEY_TO_NAME: Record<string, string> = {
   sunday: 'Sundays', monday: 'Mondays', tuesday: 'Tuesdays', wednesday: 'Wednesdays',
   thursday: 'Thursdays', friday: 'Fridays', saturday: 'Saturdays',
+};
+
+const DAY_NUM_TO_NAME: Record<number, string> = {
+  0: 'Sundays', 1: 'Mondays', 2: 'Tuesdays', 3: 'Wednesdays',
+  4: 'Thursdays', 5: 'Fridays', 6: 'Saturdays',
 };
 
 export async function POST() {
@@ -96,11 +102,26 @@ export async function POST() {
   }
 
   // Generate plan explanation from user data
-  const raceName = (userRacesRes.data?.[0]?.custom_name) || goalRes.data.race_distance?.replace('_', ' ') || 'your race';
+  // Resolve race name: try custom_name → library lookup by race_id → goal distance fallback
+  const userRace = userRacesRes.data?.[0];
+  let raceName = 'your race';
+  if (userRace?.custom_name) {
+    raceName = userRace.custom_name;
+  } else if (userRace?.race_id) {
+    const libRace = RACES.find(r => r.id === userRace.race_id);
+    if (libRace) raceName = libRace.name;
+  }
+  if (raceName === 'your race' && goalRes.data.race_distance) {
+    const distNames: Record<string, string> = { '5k': '5K', '10k': '10K', 'half_marathon': 'Half Marathon', 'marathon': 'Marathon' };
+    raceName = distNames[goalRes.data.race_distance] || goalRes.data.race_distance;
+  }
+
   const totalWeeks = plan.length;
   const lifeActivities = lifeActivitiesRes.data || [];
+  const activeConstraints = constraintsRes.data || [];
 
   const activityNotes: string[] = [];
+  // Check life_activities for gym/team_sport days
   for (const la of lifeActivities) {
     if (!la.active) continue;
     const days = (la.details as Record<string, unknown>)?.days;
@@ -111,6 +132,16 @@ export async function POST() {
       } else if (la.activity_type === 'gym') {
         activityNotes.push(`you do strength training on ${dayNamesList}`);
       }
+    }
+  }
+  // Also check constraints for recurring activities (tennis, gym, etc.)
+  for (const c of activeConstraints) {
+    if (c.type !== 'recurring_activity' || c.day_of_week == null) continue;
+    const dayName = DAY_NUM_TO_NAME[c.day_of_week] || `day ${c.day_of_week}`;
+    const actLabel = c.activity_type === 'generic_strength' ? 'strength training' : (c.activity_type || 'an activity');
+    // Don't duplicate if already covered by life_activities
+    if (!activityNotes.some(n => n.includes(actLabel))) {
+      activityNotes.push(`you have ${actLabel} on ${dayName}`);
     }
   }
 

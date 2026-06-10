@@ -108,16 +108,15 @@ export default function PlanPage() {
     setConstraints(constraintsRes.data || []);
     setLifeActivities(lifeActivitiesRes.data || []);
 
-    // Resolve race name
+    // Resolve race name: custom_name → library lookup → goal distance
     const ur = userRacesRes.data?.[0] as UserRace | undefined;
-    if (ur) {
-      if (ur.race_id) {
-        const libRace = RACES.find(r => r.id === ur.race_id);
-        setRaceName(libRace?.name || ur.custom_name || '');
-      } else {
-        setRaceName(ur.custom_name || '');
-      }
+    if (ur?.custom_name) {
+      setRaceName(ur.custom_name);
+    } else if (ur?.race_id) {
+      const libRace = RACES.find(r => r.id === ur.race_id);
+      setRaceName(libRace?.name || '');
     }
+    // If still empty, fall through to displayRaceName which uses goal.race_distance
 
     // Find plan explanation from coach messages
     const explanationMsg = (explanationRes.data || []).find(
@@ -334,7 +333,8 @@ export default function PlanPage() {
     return Math.ceil(diff / (7 * 24 * 60 * 60 * 1000));
   })();
 
-  const displayRaceName = raceName || goal?.race_distance?.replace('_', ' ') || 'training';
+  const distNames: Record<string, string> = { '5k': '5K', '10k': '10K', 'half_marathon': 'Half Marathon', 'marathon': 'Marathon' };
+  const displayRaceName = raceName || (goal?.race_distance ? distNames[goal.race_distance] || goal.race_distance.replace('_', ' ') : 'Training');
   const raceDate = goal?.race_date ? format(parseISO(goal.race_date), 'dd MMM yyyy').toUpperCase() : null;
   const totalWeeks = intents.length;
   const completedWeeks = intents.filter(i => i.week_state === 'completed').length;
