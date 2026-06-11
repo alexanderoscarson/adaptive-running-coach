@@ -14,7 +14,7 @@ export default function HomePage() {
       {/* ===== NAV BAR (appears after hero scroll) ===== */}
       <section className="relative px-6 py-6">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <h2 className="text-2xl font-extrabold tracking-tight font-display">P<span className="text-primary">T</span></h2>
+          <h2 className="text-2xl font-extrabold tracking-tight font-display">P<span className="text-primary">arro</span>t</h2>
           <Link href="/auth/login" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">
             Sign in
           </Link>
@@ -201,7 +201,7 @@ export default function HomePage() {
       {/* ===== FOOTER ===== */}
       <footer className="border-t border-border py-8 px-6">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <p className="text-sm font-extrabold font-display">P<span className="text-primary">T</span></p>
+          <p className="text-sm font-extrabold font-display">P<span className="text-primary">arro</span>t</p>
           <p className="text-xs text-muted-foreground font-bold">Parrot — Your Personal Trainer</p>
         </div>
       </footer>

@@ -13,6 +13,7 @@ import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Loader2, Search, Trophy, X, Plus, Sparkles, AlertCircle } from 'lucide-react';
 import { RACES, getKlassikerRaces, getRaceById, SPORT_LABELS, SPORT_EMOJI, type Race, type Sport } from '@/lib/races';
+import { SportCombobox } from '@/components/ui/sport-combobox';
 
 // Steps: 0=Races, 1=Fitness, 2=SportBalance(conditional), 3=Schedule, 4=Life, 5=TrainingPrefs, 6=Summary
 const TOTAL_STEPS = 7;
@@ -55,15 +56,6 @@ interface LifeActivityState {
 const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const DAY_CHIPS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_CHIPS_SV = ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'];
-
-const SPORT_LIBRARY: { category: string; sports: string[] }[] = [
-  { category: 'Team sports', sports: ['Football', 'Futsal', 'Basketball', 'Volleyball', 'Handball', 'Hockey', 'Floorball', 'Bandy', 'Rugby', 'Baseball', 'Softball', 'American Football', 'Lacrosse', 'Water Polo', 'Cricket'] },
-  { category: 'Racket sports', sports: ['Tennis', 'Padel', 'Badminton', 'Squash', 'Table Tennis', 'Pickleball'] },
-  { category: 'Combat / martial arts', sports: ['Boxing', 'Kickboxing', 'Wrestling', 'Judo', 'BJJ', 'MMA', 'Fencing'] },
-  { category: 'Dance & gymnastics', sports: ['Dance', 'Gymnastics', 'Cheerleading', 'Aerobics'] },
-  { category: 'Other group activities', sports: ['CrossFit', 'Yoga', 'Pilates', 'Climbing', 'Rowing', 'Kayaking', 'Horse Riding', 'Martial Arts'] },
-];
-const ALL_SPORTS = SPORT_LIBRARY.flatMap(c => c.sports);
 
 function timeToSeconds(time: string): number | null {
   if (!time) return null;
@@ -111,10 +103,6 @@ export default function OnboardingPage() {
     { type: 'regular_travel', active: false, frequency: 0, sportName: '', days: [] },
     { type: 'recovery_priority', active: false, frequency: 0, sportName: '', days: [] },
   ]);
-
-  // Sport picker state
-  const [sportQuery, setSportQuery] = useState('');
-  const [sportPickerOpen, setSportPickerOpen] = useState(false);
 
   // Step 6: Training preferences
   const [trainingVolume, setTrainingVolume] = useState<TrainingVolume>('steady');
@@ -986,47 +974,15 @@ export default function OnboardingPage() {
                         {/* Team sport follow-up: sport name + frequency + day picker */}
                         {la.active && item.type === 'team_sport' && (
                           <div className="mt-2 ml-12 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="relative">
+                            <div>
                               <Label className="text-xs text-muted-foreground">Which sport?</Label>
-                              <Input
-                                value={sportPickerOpen ? sportQuery : la.sportName}
-                                onChange={e => { setSportQuery(e.target.value); setSportPickerOpen(true); }}
-                                onFocus={() => { setSportQuery(la.sportName); setSportPickerOpen(true); }}
-                                placeholder="Search sports..."
-                                className="h-9 rounded-xl mt-1 text-sm"
-                              />
-                              {sportPickerOpen && (
-                                <div className="absolute z-50 mt-1 w-full rounded-xl border bg-card shadow-lg max-h-52 overflow-y-auto">
-                                  {SPORT_LIBRARY.map(cat => {
-                                    const filtered = cat.sports.filter(s => s.toLowerCase().includes((sportQuery || '').toLowerCase()));
-                                    if (filtered.length === 0) return null;
-                                    return (
-                                      <div key={cat.category}>
-                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide px-3 pt-2 pb-1">{cat.category}</p>
-                                        {filtered.map(sport => (
-                                          <button
-                                            key={sport}
-                                            onClick={() => {
-                                              updateLifeActivity('team_sport', 'sportName', sport);
-                                              setSportPickerOpen(false);
-                                              setSportQuery('');
-                                            }}
-                                            className={cn(
-                                              'w-full text-left px-3 py-1.5 text-sm hover:bg-muted/50 transition-colors',
-                                              la.sportName === sport && 'bg-primary/10 text-primary font-semibold'
-                                            )}
-                                          >
-                                            {sport}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    );
-                                  })}
-                                  {ALL_SPORTS.filter(s => s.toLowerCase().includes((sportQuery || '').toLowerCase())).length === 0 && (
-                                    <p className="text-sm text-muted-foreground p-3 text-center">No matches</p>
-                                  )}
-                                </div>
-                              )}
+                              <div className="mt-1">
+                                <SportCombobox
+                                  value={la.sportName}
+                                  onValueChange={(sport) => updateLifeActivity('team_sport', 'sportName', sport)}
+                                  placeholder="Search sports..."
+                                />
+                              </div>
                             </div>
                             <div>
                               <Label className="text-xs text-muted-foreground">How often per week?</Label>

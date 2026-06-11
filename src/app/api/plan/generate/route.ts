@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { generatePlan } from '@/lib/plan-generator';
+import { generatePlan, formatPace, deriveThresholdPace, derivePaces } from '@/lib/plan-generator';
 import { RACES } from '@/lib/races';
 import { format, addDays } from 'date-fns';
 
@@ -14,17 +14,23 @@ const DAY_NUM_TO_NAME: Record<number, string> = {
   4: 'Thursdays', 5: 'Fridays', 6: 'Saturdays',
 };
 
+const DAY_KEY_TO_NUM: Record<string, number> = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
+};
+
 export async function POST() {
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const [profileRes, goalRes, constraintsRes, lifeActivitiesRes, userRacesRes] = await Promise.all([
+  const [profileRes, goalRes, constraintsRes, lifeActivitiesRes, userRacesRes, userSportsRes] = await Promise.all([
     supabase.from('user_profiles').select('*').eq('id', user.id).single(),
     supabase.from('goals').select('*').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1).single(),
     supabase.from('constraints').select('*').eq('user_id', user.id).eq('active', true),
     supabase.from('life_activities').select('*').eq('user_id', user.id).eq('active', true),
     supabase.from('user_races').select('*').eq('user_id', user.id).eq('active', true).limit(1),
+    supabase.from('user_sports').select('*').eq('user_id', user.id),
   ]);
 
   if (!profileRes.data || !goalRes.data) {
@@ -42,26 +48,95 @@ export async function POST() {
     }, { status: 404 });
   }
 
-  console.log('[PlanGenerate] Profile runs_per_week:', profileRes.data.runs_per_week, '| available_days:', profileRes.data.available_days, '| life_activities:', (lifeActivitiesRes.data || []).map((la: { activity_type: string; details: unknown }) => ({ type: la.activity_type, details: la.details })));
+  // ── Log all input data for debugging ──
+  const profile = profileRes.data;
+  const goal = goalRes.data;
+  const lifeActivities = lifeActivitiesRes.data || [];
+  const activeConstraints = constraintsRes.data || [];
+  const userSports = userSportsRes.data || [];
 
-  const plan = generatePlan(profileRes.data, goalRes.data, constraintsRes.data || [], lifeActivitiesRes.data || []);
+  console.log('[PlanGenerate] Profile runs_per_week:', profile.runs_per_week, '| available_days:', profile.available_days);
+  console.log('[PlanGenerate] Life activities:', lifeActivities.map((la: { activity_type: string; details: unknown }) => ({ type: la.activity_type, details: la.details })));
 
-  // Log validation: check session counts per week
+  // Log warnings for missing input fields
+  if (!goal.race_distance) console.warn('[PlanGenerate] WARNING: goal.race_distance is missing');
+  if (!goal.race_date) console.warn('[PlanGenerate] WARNING: goal.race_date is missing');
+  if (!profile.runs_per_week) console.warn('[PlanGenerate] WARNING: profile.runs_per_week is missing');
+  if (!profile.available_days?.length) console.warn('[PlanGenerate] WARNING: profile.available_days is empty');
+
+  // ── Extract strength + team sport days for validation ──
+  const strengthDays: number[] = [];
+  const teamSportDays: number[] = [];
+
+  for (const la of lifeActivities) {
+    if (!la.active) continue;
+    const days = (la.details as Record<string, unknown>)?.days;
+    if (!Array.isArray(days)) continue;
+    for (const dayKey of days) {
+      const num = DAY_KEY_TO_NUM[dayKey as string];
+      if (num === undefined) continue;
+      if (la.activity_type === 'gym' && !strengthDays.includes(num)) strengthDays.push(num);
+      if (la.activity_type === 'team_sport' && !teamSportDays.includes(num)) teamSportDays.push(num);
+    }
+  }
+  for (const c of activeConstraints) {
+    if (c.type === 'recurring_activity' && c.activity_type === 'generic_strength' && c.day_of_week != null) {
+      if (!strengthDays.includes(c.day_of_week)) strengthDays.push(c.day_of_week);
+    }
+  }
+
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  console.log('[PlanGenerate] strengthDays:', strengthDays.map(d => dayNames[d]).join(', ') || 'none');
+  console.log('[PlanGenerate] teamSportDays:', teamSportDays.map(d => dayNames[d]).join(', ') || 'none');
+
+  // ── Derive threshold pace for logging and response ──
+  const thresholdPace = deriveThresholdPace(goal, profile);
+  const paces = derivePaces(thresholdPace);
+  console.log(`[PlanGenerate] Derived threshold pace: ${formatPace(thresholdPace)} /km`);
+
+  // ── Generate the plan ──
+  const plan = generatePlan(profile, goal, activeConstraints, lifeActivities);
+
+  // ── POST-GENERATION VALIDATION ──
+  // Strip any strength sessions on unauthorized days (belt-and-suspenders with plan-generator.ts)
+  if (strengthDays.length > 0) {
+    for (const week of plan) {
+      for (let i = week.sessions.length - 1; i >= 0; i--) {
+        if (week.sessions[i].type === 'strength' && !strengthDays.includes(week.sessions[i].dayOfWeek)) {
+          console.warn(`[PlanGenerate] VALIDATION: Removing unauthorized strength session on day ${week.sessions[i].dayOfWeek} in week ${week.weekNumber}`);
+          week.sessions.splice(i, 1);
+        }
+      }
+    }
+  }
+
+  // Validate: no quality session day-after long run (Rule 5 double-check)
+  for (const week of plan) {
+    const longSession = week.sessions.find(s => s.type === 'long');
+    if (!longSession) continue;
+    const dayAfterLong = (longSession.dayOfWeek + 1) % 7;
+    for (const s of week.sessions) {
+      if (s.dayOfWeek === dayAfterLong && ['tempo', 'intervals', 'hills'].includes(s.type)) {
+        console.warn(`[PlanGenerate] VALIDATION FAIL: ${s.type} on ${dayNames[s.dayOfWeek]} is day-after long run in week ${week.weekNumber}`);
+      }
+    }
+  }
+
+  // Log first 3 weeks for audit
   for (const week of plan.slice(0, 3)) {
     const runTypes = ['easy', 'long', 'tempo', 'intervals', 'hills', 'recovery', 'race'];
     const runs = week.sessions.filter(s => runTypes.includes(s.type));
     console.log(`[PlanGenerate] Week ${week.weekNumber}: ${runs.length} runs on [${runs.map(s => dayNames[s.dayOfWeek]).join(', ')}], total sessions: ${week.sessions.length}`);
   }
 
-  // Delete existing plan
+  // ── Write to database ──
   await supabase.from('sessions').delete().eq('user_id', user.id);
   await supabase.from('plan_intents').delete().eq('user_id', user.id);
 
   for (const week of plan) {
     const { data: intent } = await supabase.from('plan_intents').insert({
       user_id: user.id,
-      goal_id: goalRes.data.id,
+      goal_id: goal.id,
       week_number: week.weekNumber,
       phase: week.phase,
       week_state: week.weekNumber === 1 ? 'current' : 'planned',
@@ -101,8 +176,7 @@ export async function POST() {
     }
   }
 
-  // Generate plan explanation from user data
-  // Resolve race name: try custom_name → library lookup by race_id → goal distance fallback
+  // ── Generate plan explanation ──
   const userRace = userRacesRes.data?.[0];
   let raceName = 'your race';
   if (userRace?.custom_name) {
@@ -111,17 +185,12 @@ export async function POST() {
     const libRace = RACES.find(r => r.id === userRace.race_id);
     if (libRace) raceName = libRace.name;
   }
-  if (raceName === 'your race' && goalRes.data.race_distance) {
-    const distNames: Record<string, string> = { '5k': '5K', '10k': '10K', 'half_marathon': 'Half Marathon', 'marathon': 'Marathon' };
-    raceName = distNames[goalRes.data.race_distance] || goalRes.data.race_distance;
-  }
+  // Do NOT fall back to distance enum ("Marathon") — keep "your race" as safe default
 
   const totalWeeks = plan.length;
-  const lifeActivities = lifeActivitiesRes.data || [];
-  const activeConstraints = constraintsRes.data || [];
 
+  // Build activity awareness clause
   const activityNotes: string[] = [];
-  // Check life_activities for gym/team_sport days
   for (const la of lifeActivities) {
     if (!la.active) continue;
     const days = (la.details as Record<string, unknown>)?.days;
@@ -134,12 +203,10 @@ export async function POST() {
       }
     }
   }
-  // Also check constraints for recurring activities (tennis, gym, etc.)
   for (const c of activeConstraints) {
     if (c.type !== 'recurring_activity' || c.day_of_week == null) continue;
     const dayName = DAY_NUM_TO_NAME[c.day_of_week] || `day ${c.day_of_week}`;
     const actLabel = c.activity_type === 'generic_strength' ? 'strength training' : (c.activity_type || 'an activity');
-    // Don't duplicate if already covered by life_activities
     if (!activityNotes.some(n => n.includes(actLabel))) {
       activityNotes.push(`you have ${actLabel} on ${dayName}`);
     }
@@ -149,17 +216,30 @@ export async function POST() {
     ? `Since ${activityNotes.join(' and ')}, I've structured your week to avoid scheduling hard runs on or next to those days.`
     : `I've spread your sessions across the week to balance training and recovery.`;
 
-  const runsPerWeek = profileRes.data.runs_per_week || 3;
-  const explanation = `Here's your ${totalWeeks}-week training plan for ${raceName}. ${activityClause} You'll run ${runsPerWeek} times per week, starting with a base-building phase focused on aerobic fitness, before introducing more intensity closer to race day. The plan includes recovery weeks every 3–4 weeks to let your body absorb the training.`;
+  const runsPerWeek = profile.runs_per_week || 3;
+  const thresholdNote = `Your plan is built around a threshold pace of ${formatPace(thresholdPace)} /km — all training paces are derived from this anchor.`;
 
-  // Save explanation as a coach message with special action_type
+  const explanation = `Here's your ${totalWeeks}-week training plan for ${raceName}. ${thresholdNote} ${activityClause} You'll run ${runsPerWeek} times per week, starting with a base-building phase focused on aerobic fitness (80%+ easy pace), before introducing more intensity closer to race day. The plan includes recovery weeks every 3–4 weeks to let your body absorb the training.`;
+
+  // Save explanation as a coach message
   await supabase.from('coach_messages').insert({
     user_id: user.id,
     role: 'assistant',
     content: explanation,
     action_type: 'none',
-    action_data: { type: 'plan_explanation', race_name: raceName, total_weeks: totalWeeks },
+    action_data: {
+      type: 'plan_explanation',
+      race_name: raceName,
+      total_weeks: totalWeeks,
+      threshold_pace_kmmin: thresholdPace,
+    },
   });
 
-  return NextResponse.json({ success: true, weeks: plan.length, explanation, raceName });
+  return NextResponse.json({
+    success: true,
+    weeks: plan.length,
+    explanation,
+    raceName,
+    threshold_pace_kmmin: thresholdPace,
+  });
 }

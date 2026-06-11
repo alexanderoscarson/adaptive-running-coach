@@ -12,24 +12,25 @@ export function HeroAnimation() {
     offset: ['start start', 'end start'],
   });
 
-  // "arro" fades out and collapses: 0% → 50% scroll
-  const arroOpacity = useTransform(scrollYProgress, [0, 0.35], [1, 0]);
-  const arroWidth = useTransform(scrollYProgress, [0, 0.5], ['100%', '0%']);
-  const arroScale = useTransform(scrollYProgress, [0, 0.4], [1, 0.3]);
+  // "arro" fades out and collapses: 0% → 35% scroll
+  const arroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+  const arroWidth = useTransform(scrollYProgress, [0, 0.45], ['100%', '0%']);
+  const arroScale = useTransform(scrollYProgress, [0, 0.35], [1, 0.3]);
 
-  // "PT" scales in and fades in: 40% → 80% scroll
-  const ptOpacity = useTransform(scrollYProgress, [0.35, 0.7], [0, 1]);
-  const ptScale = useTransform(scrollYProgress, [0.35, 0.7], [0.5, 1]);
+  // "P" and "t" fade out BEFORE "PT" fades in: 25% → 45%
+  const letterOpacity = useTransform(scrollYProgress, [0.25, 0.45], [1, 0]);
+  const letterScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.75]);
 
-  // P and t scale down to give PT room: 0% → 60%
-  const letterScale = useTransform(scrollYProgress, [0, 0.6], [1, 0.75]);
+  // "PT" scales in AFTER P and t are gone: 50% → 75% scroll
+  const ptOpacity = useTransform(scrollYProgress, [0.5, 0.75], [0, 1]);
+  const ptScale = useTransform(scrollYProgress, [0.5, 0.75], [0.5, 1]);
 
   // Slogan fades out
-  const sloganOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
-  const sloganY = useTransform(scrollYProgress, [0, 0.3], [0, 30]);
+  const sloganOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
+  const sloganY = useTransform(scrollYProgress, [0, 0.25], [0, 30]);
 
   // Scroll indicator fades out
-  const chevronOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
+  const chevronOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
 
   return (
     <div ref={containerRef} className="relative h-[200vh]">
@@ -51,8 +52,9 @@ export function HeroAnimation() {
             <motion.span
               className="font-display text-white inline-block origin-bottom-right"
               style={{
-                fontSize: 'clamp(64px, 12vw, 96px)',
+                fontSize: 'clamp(72px, 14vw, 128px)',
                 scale: letterScale,
+                opacity: letterOpacity,
                 lineHeight: 1,
               }}
             >
@@ -63,7 +65,7 @@ export function HeroAnimation() {
             <motion.span
               className="font-display text-primary inline-block overflow-hidden origin-left"
               style={{
-                fontSize: 'clamp(64px, 12vw, 96px)',
+                fontSize: 'clamp(72px, 14vw, 128px)',
                 opacity: arroOpacity,
                 width: arroWidth,
                 scale: arroScale,
@@ -73,36 +75,32 @@ export function HeroAnimation() {
               <span className="inline-block whitespace-nowrap">arro</span>
             </motion.span>
 
-            {/* "PT" — scales in (positioned over the collapsed space) */}
-            <motion.span
-              className="font-display text-primary inline-block origin-center absolute"
-              style={{
-                fontSize: 'clamp(64px, 12vw, 96px)',
-                opacity: ptOpacity,
-                scale: ptScale,
-                lineHeight: 1,
-                // Prevent layout shift — this overlays
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
-              }}
-            >
-              PT
-            </motion.span>
-
             {/* t */}
             <motion.span
               className="font-display text-white inline-block origin-bottom-left"
               style={{
-                fontSize: 'clamp(64px, 12vw, 96px)',
+                fontSize: 'clamp(72px, 14vw, 128px)',
                 scale: letterScale,
-                opacity: arroOpacity,
+                opacity: letterOpacity,
                 lineHeight: 1,
               }}
             >
               t
             </motion.span>
           </div>
+
+          {/* "PT" — fades in only after P and t are fully gone */}
+          <motion.span
+            className="font-display text-primary inline-block origin-center absolute"
+            style={{
+              fontSize: 'clamp(72px, 14vw, 128px)',
+              opacity: ptOpacity,
+              scale: ptScale,
+              lineHeight: 1,
+            }}
+          >
+            PT
+          </motion.span>
 
           {/* Slogan */}
           <motion.p
@@ -111,7 +109,7 @@ export function HeroAnimation() {
               opacity: sloganOpacity,
               y: sloganY,
               color: 'rgba(255, 255, 255, 0.6)',
-              fontSize: '17px',
+              fontSize: '20px',
               fontWeight: 500,
             }}
           >

@@ -25,6 +25,9 @@ interface GoalRow {
   id: string;
   race_distance: string | null;
   race_date: string | null;
+  // Enriched from user_races when used as fallback
+  _raceName?: string | null;
+  _raceDistanceKm?: number | null;
 }
 
 export default function RacesPage() {
@@ -44,15 +47,49 @@ export default function RacesPage() {
   async function loadUserRaces() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const [racesRes, goalRes] = await Promise.all([
+    const [racesRes, goalRes, allRacesRes] = await Promise.all([
       supabase.from('user_races').select('*').eq('user_id', user.id).eq('active', true),
-      supabase.from('goals').select('id, race_distance, race_date').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1).single(),
+      supabase.from('goals').select('id, race_distance, race_date').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1),
+      // Also fetch any user_races (including inactive) for race name resolution
+      supabase.from('user_races').select('custom_name, custom_distance_km, race_id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
     ]);
     if (racesRes.data && racesRes.data.length > 0) {
       setUserRaces(racesRes.data);
-    } else if (goalRes.data?.race_distance) {
-      // Fallback: show the goal as a race even if user_races is empty (FK failure)
-      setGoalFallback(goalRes.data);
+    } else {
+      // Resolve the actual race name from user_races (active or inactive)
+      const anyRace = allRacesRes.data?.[0];
+      let resolvedName: string | null = null;
+      let resolvedDistanceKm: number | null = null;
+      if (anyRace?.custom_name) {
+        resolvedName = anyRace.custom_name;
+        resolvedDistanceKm = anyRace.custom_distance_km;
+      } else if (anyRace?.race_id) {
+        const libRace = RACES.find(r => r.id === anyRace.race_id);
+        if (libRace) {
+          resolvedName = libRace.name;
+          resolvedDistanceKm = libRace.distanceKm;
+        }
+      }
+
+      const goal = goalRes.data?.[0];
+      if (goal?.race_distance || resolvedName) {
+        // Enrich goal fallback with actual race name from user_races
+        setGoalFallback({
+          id: goal?.id || '',
+          race_distance: goal?.race_distance || null,
+          race_date: goal?.race_date || null,
+          _raceName: resolvedName,
+          _raceDistanceKm: resolvedDistanceKm,
+        });
+      } else if (allRacesRes.data && allRacesRes.data.length > 0) {
+        // Last resort: re-activate the most recent user_race
+        const { data: fullRaces } = await supabase.from('user_races').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1);
+        if (fullRaces && fullRaces.length > 0) {
+          const race = fullRaces[0];
+          await supabase.from('user_races').update({ active: true }).eq('id', race.id);
+          setUserRaces([{ ...race, active: true }]);
+        }
+      }
     }
   }
 
@@ -104,16 +141,21 @@ export default function RacesPage() {
             </CardContent>
           </Card>
         ) : userRaces.length === 0 && goalFallback ? (
-          /* Show goal as fallback race card */
+          /* Show goal as fallback race card — prefer actual race name over distance enum */
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <span className="text-2xl">🏃</span>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">
-                  {({ '5k': '5K', '10k': '10K', 'half_marathon': 'Half Marathon', 'marathon': 'Marathon' } as Record<string, string>)[goalFallback.race_distance || ''] || goalFallback.race_distance || 'Race'}
+                  {goalFallback._raceName || 'Race'}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {({ '5k': 5, '10k': 10, 'half_marathon': 21.1, 'marathon': 42.2 } as Record<string, number>)[goalFallback.race_distance || ''] || 0}km · Running
+                  {goalFallback._raceDistanceKm
+                    ? `${goalFallback._raceDistanceKm}km`
+                    : goalFallback.race_distance
+                      ? `${({ '5k': 5, '10k': 10, 'half_marathon': 21.1, 'marathon': 42.2 } as Record<string, number>)[goalFallback.race_distance] || 0}km`
+                      : ''
+                  } · Running
                   {goalFallback.race_date && <> · <Calendar className="inline h-3 w-3 mx-0.5" />{goalFallback.race_date}</>}
                 </p>
               </div>

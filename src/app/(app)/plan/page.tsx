@@ -77,6 +77,7 @@ export default function PlanPage() {
   const [goal, setGoal] = useState<Goal | null>(null);
   const [raceName, setRaceName] = useState<string>('');
   const [planExplanation, setPlanExplanation] = useState<string>('');
+  const [storedRaceName, setStoredRaceName] = useState<string>('');
   const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [dragOverDay, setDragOverDay] = useState<{ week: number; day: number } | null>(null);
@@ -109,21 +110,40 @@ export default function PlanPage() {
     setConstraints(constraintsRes.data || []);
     setLifeActivities(lifeActivitiesRes.data || []);
 
-    // Resolve race name: custom_name → library lookup → goal distance
+    // Resolve race name: custom_name → library lookup → inactive user_races fallback
     const ur = userRacesRes.data?.[0] as UserRace | undefined;
     if (ur?.custom_name) {
       setRaceName(ur.custom_name);
     } else if (ur?.race_id) {
       const libRace = RACES.find(r => r.id === ur.race_id);
-      setRaceName(libRace?.name || '');
+      if (libRace) setRaceName(libRace.name);
     }
-    // If still empty, fall through to displayRaceName which uses goal.race_distance
+    // If still no name from active user_races, try inactive ones (may have been deactivated by onboarding retry)
+    if (!ur?.custom_name && !(ur?.race_id && RACES.find(r => r.id === ur.race_id))) {
+      const { data: anyRaces } = await supabase
+        .from('user_races')
+        .select('custom_name, race_id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const fallbackRace = anyRaces?.[0];
+      if (fallbackRace?.custom_name) {
+        setRaceName(fallbackRace.custom_name);
+      } else if (fallbackRace?.race_id) {
+        const libRace = RACES.find(r => r.id === fallbackRace.race_id);
+        if (libRace) setRaceName(libRace.name);
+      }
+    }
 
     // Find plan explanation from coach messages
     const explanationMsg = (explanationRes.data || []).find(
       (m: { action_data: Record<string, unknown> | null }) => (m.action_data as Record<string, unknown>)?.type === 'plan_explanation'
     );
-    if (explanationMsg) setPlanExplanation(explanationMsg.content);
+    if (explanationMsg) {
+      setPlanExplanation(explanationMsg.content);
+      const savedName = (explanationMsg.action_data as Record<string, unknown>)?.race_name;
+      if (savedName && typeof savedName === 'string') setStoredRaceName(savedName);
+    }
 
     const currentWeek = (intentsRes.data || []).find(i => i.week_state === 'current');
     if (currentWeek) {
@@ -210,6 +230,12 @@ export default function PlanPage() {
 
   function handleDragOver(e: React.DragEvent, weekNumber: number, dayOfWeek: number) {
     e.preventDefault();
+    // Life activities can always be dropped on any day
+    if (dragActivityRef.current) {
+      e.dataTransfer.dropEffect = 'move';
+      setDragOverDay({ week: weekNumber, day: dayOfWeek });
+      return;
+    }
     const weekSessions = sessions[weekNumber] || [];
     const sessionsOnDay = weekSessions.filter(s => s.day_of_week === dayOfWeek);
     const draggedId = dragSessionRef.current?.session.id;
@@ -387,8 +413,20 @@ export default function PlanPage() {
     return Math.ceil(diff / (7 * 24 * 60 * 60 * 1000));
   })();
 
-  const distNames: Record<string, string> = { '5k': '5K', '10k': '10K', 'half_marathon': 'Half Marathon', 'marathon': 'Marathon' };
-  const displayRaceName = raceName || (goal?.race_distance ? distNames[goal.race_distance] || goal.race_distance.replace('_', ' ') : 'Training');
+  // Use the resolved race name; never fall back to distance enum labels like "Marathon"
+  const displayRaceName = raceName || 'your race';
+
+  // Dynamically replace the stored race name in the coach explanation with the current one
+  const dynamicExplanation = (() => {
+    if (!planExplanation) return '';
+    if (storedRaceName && displayRaceName && storedRaceName !== displayRaceName) {
+      return planExplanation.replace(storedRaceName, displayRaceName);
+    }
+    return planExplanation.replace(
+      /training plan for [^.]+\./,
+      `training plan for ${displayRaceName}.`
+    );
+  })();
   const raceDate = goal?.race_date ? format(parseISO(goal.race_date), 'dd MMM yyyy').toUpperCase() : null;
   const totalWeeks = intents.length;
   const completedWeeks = intents.filter(i => i.week_state === 'completed').length;
@@ -396,13 +434,13 @@ export default function PlanPage() {
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-6 space-y-5 pb-8">
-      {/* Fix 6: Dynamic race name title */}
+      {/* Dynamic race name title — uses resolved name, never distance enum */}
       <h1 className="text-2xl font-bold text-center font-display">
-        {raceName ? `Plan for ${raceName}` : 'Your Plan'}
+        {`Plan for ${displayRaceName}`}
       </h1>
 
       {/* Fix 3: Coach explanation card */}
-      {planExplanation && (
+      {dynamicExplanation && (
         <Card className="bg-gradient-to-br from-primary/10 to-purple-500/5 border-primary/20">
           <CardContent className="py-4 px-5">
             <div className="flex items-start gap-3">
@@ -411,7 +449,7 @@ export default function PlanPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-primary mb-1 font-display">Your Coach</p>
-                <p className="text-sm text-foreground leading-relaxed">{planExplanation}</p>
+                <p className="text-sm text-foreground leading-relaxed">{dynamicExplanation}</p>
               </div>
             </div>
           </CardContent>

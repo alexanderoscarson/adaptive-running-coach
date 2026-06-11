@@ -8,6 +8,11 @@ export type ConstraintType = 'recurring_activity' | 'one_off' | 'vacation' | 'in
 export type VacationMode = 'rest' | 'travel_light' | 'active';
 export type CoachMode = 'suggest' | 'auto_adapt';
 export type WeekState = 'planned' | 'current' | 'completed' | 'adapted' | 'vacation' | 'recovery';
+export type Sport = 'running' | 'cycling' | 'xc_skiing' | 'swimming' | 'triathlon' | 'swimrun' | 'other';
+export type ExperienceLevel = 'never' | 'some' | 'regular';
+export type LifeActivityType = 'gym' | 'team_sport' | 'demanding_work' | 'regular_travel' | 'recovery_priority';
+export type CheckinStatus = 'pending' | 'responded' | 'accepted' | 'tweaked' | 'overridden';
+export type FeelingScore = 1 | 2 | 3 | 4 | 5;
 
 export type RecurringActivity =
   | 'tennis' | 'padel' | 'cycling' | 'swimming' | 'hiking'
@@ -30,6 +35,9 @@ export interface UserProfile {
   onboarding_completed: boolean;
   onboarding_step: number;
   dark_mode: 'system' | 'light' | 'dark';
+  preferred_session_length: '30-45' | '45-60' | '60-90' | '90+' | null;
+  time_preference: 'morning' | 'evening' | 'any' | null;
+  language: 'en' | 'sv';
   strava_connected: boolean;
   strava_athlete_id: string | null;
   strava_access_token: string | null;
@@ -52,6 +60,53 @@ export interface Goal {
   baseline_marathon_seconds: number | null;
   plan_weeks: number;
   active: boolean;
+  created_at: string;
+}
+
+export interface UserRace {
+  id: string;
+  user_id: string;
+  race_id: string | null;
+  custom_name: string | null;
+  custom_sport: Sport | null;
+  custom_distance_km: number | null;
+  target_date: string | null;
+  is_custom: boolean;
+  active: boolean;
+  created_at: string;
+}
+
+export interface UserSport {
+  id: string;
+  user_id: string;
+  sport: Sport;
+  experience_level: ExperienceLevel;
+  priority_weight: number;
+  current_ability_data: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface LifeActivity {
+  id: string;
+  user_id: string;
+  activity_type: LifeActivityType;
+  frequency: number;
+  sport_name: string | null;
+  impact_level: 'low' | 'medium' | 'high';
+  details: Record<string, unknown>;
+  active: boolean;
+  created_at: string;
+}
+
+export interface WeeklyCheckin {
+  id: string;
+  user_id: string;
+  week_start: string;
+  feeling_score: FeelingScore | null;
+  coach_message: string | null;
+  user_response: string | null;
+  plan_adjustments: Record<string, unknown>;
+  status: CheckinStatus;
   created_at: string;
 }
 
@@ -97,6 +152,7 @@ export interface Session {
   week_number: number;
   day_of_week: number;
   session_date: string;
+  sport: Sport;
   type: SessionType;
   title: string;
   description: string;

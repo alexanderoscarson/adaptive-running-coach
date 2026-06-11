@@ -1,26 +1,29 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { CalendarDays, ListChecks, MessageCircle, Settings, Sliders } from 'lucide-react';
+import { Home, CalendarDays, Trophy, MessageCircle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
 
 const NAV_ITEMS = [
-  { href: '/today', label: 'Today', icon: CalendarDays },
-  { href: '/plan', label: 'Plan', icon: ListChecks },
-  { href: '/coach', label: 'Coach', icon: MessageCircle },
-  { href: '/constraints', label: 'Schedule', icon: Sliders },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/today', labelSv: 'Hem', labelEn: 'Home', icon: Home },
+  { href: '/plan', labelSv: 'Plan', labelEn: 'Plan', icon: CalendarDays },
+  { href: '/races', labelSv: 'Lopp', labelEn: 'Races', icon: Trophy },
+  { href: '/coach', labelSv: 'Coach', labelEn: 'Coach', icon: MessageCircle },
+  { href: '/settings', labelSv: 'Profil', labelEn: 'Profile', icon: User },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { language } = useLanguage();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-xl supports-[backdrop-filter]:bg-card/80 md:hidden">
       <div className="flex items-center justify-around h-16 px-2">
         {NAV_ITEMS.map(item => {
           const active = pathname.startsWith(item.href);
+          const label = language === 'sv' ? item.labelSv : item.labelEn;
           return (
             <button
               key={item.href}
@@ -31,7 +34,7 @@ export function BottomNav() {
               )}
             >
               <item.icon className={cn('h-5 w-5', active && 'drop-shadow-[0_0_6px_var(--primary)]')} />
-              <span className="text-[10px] font-bold">{item.label}</span>
+              <span className="text-[10px] font-bold">{label}</span>
             </button>
           );
         })}
