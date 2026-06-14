@@ -137,13 +137,25 @@ export default function PlanPage() {
       }
     }
 
-    // Find plan explanation from coach messages
+    // Find plan explanation from coach messages — prefer coach_intro from action_data (Bug 1 fix)
     const explanationMsg = (explanationRes.data || []).find(
       (m: { action_data: Record<string, unknown> | null }) => (m.action_data as Record<string, unknown>)?.type === 'plan_explanation'
     );
     if (explanationMsg) {
-      setPlanExplanation(explanationMsg.content);
-      const savedName = (explanationMsg.action_data as Record<string, unknown>)?.race_name;
+      // Use the clean coach_intro from action_data; fall back to content only if it's short/clean
+      const actionData = explanationMsg.action_data as Record<string, unknown> | null;
+      const coachIntro = actionData?.coach_intro as string | undefined;
+      if (coachIntro) {
+        setPlanExplanation(coachIntro);
+      } else if (explanationMsg.content && explanationMsg.content.length < 300) {
+        // Only use raw content if it's short (likely a clean intro, not the full prompt)
+        setPlanExplanation(explanationMsg.content);
+      } else {
+        // Content is too long / contains prompt text — use plan_summary instead
+        const summary = actionData?.plan_summary as string | undefined;
+        if (summary) setPlanExplanation(summary);
+      }
+      const savedName = actionData?.race_name;
       if (savedName && typeof savedName === 'string') setStoredRaceName(savedName);
     }
 
