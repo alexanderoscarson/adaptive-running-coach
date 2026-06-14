@@ -325,11 +325,24 @@ export default function OnboardingPage() {
         console.log('[Onboarding] Extended profile updated');
       }
 
+      // ── CLEAR ALL PREVIOUS ONBOARDING DATA ──
+      // This ensures re-onboarding starts from a clean slate — no stale
+      // life activities, constraints, sports, or races carry over.
+      console.log('[Onboarding] Clearing previous onboarding data...');
+      await Promise.all([
+        supabase.from('life_activities').delete().eq('user_id', user.id),
+        supabase.from('user_sports').delete().eq('user_id', user.id),
+        supabase.from('constraints').delete().eq('user_id', user.id),
+        supabase.from('user_races').update({ active: false }).eq('user_id', user.id).eq('active', true),
+        supabase.from('goals').update({ active: false }).eq('user_id', user.id).eq('active', true),
+        supabase.from('sessions').delete().eq('user_id', user.id),
+        supabase.from('plan_intents').delete().eq('user_id', user.id),
+      ]);
+      console.log('[Onboarding] Previous data cleared');
+
       // 2. Save user_races — always store name/sport/distance for display,
       //    even for library races (FK to races table may not be seeded)
       console.log('[Onboarding] Saving races...');
-      // Clean up old user_races from previous onboarding attempts
-      await supabase.from('user_races').update({ active: false }).eq('user_id', user.id).eq('active', true);
       for (const race of selectedRaces) {
         const raceInsert = await supabase.from('user_races').insert({
           user_id: user.id,
@@ -408,9 +421,6 @@ export default function OnboardingPage() {
           baselineFields[pbDistanceToBaseline(pbDistance)] = seconds;
         }
       }
-
-      // Deactivate any existing active goals (handles onboarding retry)
-      await supabase.from('goals').update({ active: false }).eq('user_id', user.id).eq('active', true);
 
       // Compute race date from first selected race
       let raceDate: string | null = null;

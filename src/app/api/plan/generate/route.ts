@@ -51,12 +51,47 @@ export async function POST() {
   // ── Log all input data for debugging ──
   const profile = profileRes.data;
   const goal = goalRes.data;
-  const lifeActivities = lifeActivitiesRes.data || [];
-  const activeConstraints = constraintsRes.data || [];
+  const lifeActivities = (lifeActivitiesRes.data || []).filter((la: { active: boolean }) => la.active);
+  const activeConstraints = (constraintsRes.data || []).filter((c: { active: boolean }) => c.active);
   const userSports = userSportsRes.data || [];
 
-  console.log('[PlanGenerate] Profile runs_per_week:', profile.runs_per_week, '| available_days:', profile.available_days);
-  console.log('[PlanGenerate] Life activities:', lifeActivities.map((la: { activity_type: string; details: unknown }) => ({ type: la.activity_type, details: la.details })));
+  // ── FULL INPUT AUDIT LOG ──
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  console.log('═══════════════════════════════════════════════');
+  console.log('[PlanGenerate] FULL INPUT AUDIT');
+  console.log('───────────────────────────────────────────────');
+  console.log('[PlanGenerate] Profile:', JSON.stringify({
+    runs_per_week: profile.runs_per_week,
+    available_days: profile.available_days?.map((d: number) => dayNames[d]),
+    preferred_long_run_day: profile.preferred_long_run_day != null ? dayNames[profile.preferred_long_run_day] : null,
+    strength_preference: profile.strength_preference,
+    current_weekly_mileage_km: profile.current_weekly_mileage_km,
+    preferred_session_length: profile.preferred_session_length,
+    time_preference: profile.time_preference,
+  }));
+  console.log('[PlanGenerate] Goal:', JSON.stringify({
+    race_distance: goal.race_distance,
+    race_date: goal.race_date,
+    plan_weeks: goal.plan_weeks,
+    baseline_5k: goal.baseline_5k_seconds,
+    baseline_10k: goal.baseline_10k_seconds,
+    baseline_half: goal.baseline_half_seconds,
+    baseline_marathon: goal.baseline_marathon_seconds,
+  }));
+  console.log('[PlanGenerate] Life activities count:', lifeActivities.length,
+    lifeActivities.length > 0
+      ? lifeActivities.map((la: { activity_type: string; details: unknown; sport_name: string | null }) =>
+          `${la.activity_type}${la.sport_name ? `(${la.sport_name})` : ''}: ${JSON.stringify(la.details)}`
+        ).join(' | ')
+      : '(none — no gym, team sport, or other activities)');
+  console.log('[PlanGenerate] Active constraints count:', activeConstraints.length,
+    activeConstraints.length > 0
+      ? activeConstraints.map((c: { type: string; activity_type: string | null; day_of_week: number | null }) =>
+          `${c.type}/${c.activity_type}@${c.day_of_week != null ? dayNames[c.day_of_week] : 'n/a'}`
+        ).join(' | ')
+      : '(none)');
+  console.log('[PlanGenerate] User sports count:', userSports.length);
+  console.log('═══════════════════════════════════════════════');
 
   // Log warnings for missing input fields
   if (!goal.race_distance) console.warn('[PlanGenerate] WARNING: goal.race_distance is missing');
@@ -65,6 +100,7 @@ export async function POST() {
   if (!profile.available_days?.length) console.warn('[PlanGenerate] WARNING: profile.available_days is empty');
 
   // ── Extract strength + team sport days for validation ──
+  // Only populated from current onboarding data — if no life activities exist, these stay empty
   const strengthDays: number[] = [];
   const teamSportDays: number[] = [];
 
@@ -85,9 +121,8 @@ export async function POST() {
     }
   }
 
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  console.log('[PlanGenerate] strengthDays:', strengthDays.map(d => dayNames[d]).join(', ') || 'none');
-  console.log('[PlanGenerate] teamSportDays:', teamSportDays.map(d => dayNames[d]).join(', ') || 'none');
+  console.log('[PlanGenerate] strengthDays:', strengthDays.length > 0 ? strengthDays.map(d => dayNames[d]).join(', ') : 'NONE — no strength sessions will be generated');
+  console.log('[PlanGenerate] teamSportDays:', teamSportDays.length > 0 ? teamSportDays.map(d => dayNames[d]).join(', ') : 'NONE — no team sport avoidance needed');
 
   // ── Derive threshold pace for logging and response ──
   const thresholdPace = deriveThresholdPace(goal, profile);
@@ -196,26 +231,30 @@ export async function POST() {
 
   const totalWeeks = plan.length;
 
-  // Build activity awareness clause
+  // Build activity awareness clause — only from current data
   const activityNotes: string[] = [];
-  for (const la of lifeActivities) {
-    if (!la.active) continue;
-    const days = (la.details as Record<string, unknown>)?.days;
-    if (Array.isArray(days) && days.length > 0) {
-      const dayNamesList = days.map((d: string) => DAY_KEY_TO_NAME[d] || d).join(' and ');
-      if (la.activity_type === 'team_sport') {
-        activityNotes.push(`you play ${la.sport_name || 'team sport'} on ${dayNamesList}`);
-      } else if (la.activity_type === 'gym') {
-        activityNotes.push(`you do strength training on ${dayNamesList}`);
+  if (lifeActivities.length > 0) {
+    for (const la of lifeActivities) {
+      if (!la.active) continue;
+      const days = (la.details as Record<string, unknown>)?.days;
+      if (Array.isArray(days) && days.length > 0) {
+        const dayNamesList = days.map((d: string) => DAY_KEY_TO_NAME[d] || d).join(' and ');
+        if (la.activity_type === 'team_sport') {
+          activityNotes.push(`you play ${la.sport_name || 'team sport'} on ${dayNamesList}`);
+        } else if (la.activity_type === 'gym') {
+          activityNotes.push(`you do strength training on ${dayNamesList}`);
+        }
       }
     }
   }
-  for (const c of activeConstraints) {
-    if (c.type !== 'recurring_activity' || c.day_of_week == null) continue;
-    const dayName = DAY_NUM_TO_NAME[c.day_of_week] || `day ${c.day_of_week}`;
-    const actLabel = c.activity_type === 'generic_strength' ? 'strength training' : (c.activity_type || 'an activity');
-    if (!activityNotes.some(n => n.includes(actLabel))) {
-      activityNotes.push(`you have ${actLabel} on ${dayName}`);
+  if (activeConstraints.length > 0) {
+    for (const c of activeConstraints) {
+      if (c.type !== 'recurring_activity' || c.day_of_week == null) continue;
+      const dayName = DAY_NUM_TO_NAME[c.day_of_week] || `day ${c.day_of_week}`;
+      const actLabel = c.activity_type === 'generic_strength' ? 'strength training' : (c.activity_type || 'an activity');
+      if (!activityNotes.some(n => n.includes(actLabel))) {
+        activityNotes.push(`you have ${actLabel} on ${dayName}`);
+      }
     }
   }
 
