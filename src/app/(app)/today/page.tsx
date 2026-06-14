@@ -110,6 +110,10 @@ export default function TodayPage() {
   const [completedActivities, setCompletedActivities] = useState<Set<string>>(new Set());
   const [expandedExplainer, setExpandedExplainer] = useState<string | null>(null);
   const [userName, setUserName] = useState('');
+  const [raceName, setRaceName] = useState('');
+  const [weeksUntilRace, setWeeksUntilRace] = useState<number | null>(null);
+  const [planSummary, setPlanSummary] = useState('');
+  const [totalPlanWeeks, setTotalPlanWeeks] = useState<number | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -127,17 +131,55 @@ export default function TodayPage() {
     const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
     const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
 
-    const [todayRes, weekRes, intentRes, constraintsRes] = await Promise.all([
+    const [todayRes, weekRes, intentRes, constraintsRes, goalRes, userRacesRes, coachMsgRes, totalIntentsRes] = await Promise.all([
       supabase.from('sessions').select('*').eq('user_id', user.id).eq('session_date', today).order('order_in_day'),
       supabase.from('sessions').select('*').eq('user_id', user.id).gte('session_date', weekStart).lte('session_date', weekEnd).order('session_date').order('order_in_day'),
       supabase.from('plan_intents').select('*').eq('user_id', user.id).eq('week_state', 'current').single(),
       supabase.from('constraints').select('*').eq('user_id', user.id).eq('active', true),
+      supabase.from('goals').select('race_date').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1).single(),
+      supabase.from('user_races').select('custom_name, race_id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
+      supabase.from('coach_messages').select('action_data').eq('user_id', user.id).eq('role', 'assistant').order('created_at', { ascending: false }).limit(10),
+      supabase.from('plan_intents').select('id').eq('user_id', user.id),
     ]);
 
     setSessions(todayRes.data || []);
     setWeekSessions(weekRes.data || []);
     setCurrentIntent(intentRes.data);
     setConstraints(constraintsRes.data || []);
+    setTotalPlanWeeks(totalIntentsRes.data?.length || null);
+
+    // Race countdown
+    if (goalRes.data?.race_date) {
+      const now = new Date();
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const raceDate = new Date(goalRes.data.race_date);
+      const diff = raceDate.getTime() - todayMidnight.getTime();
+      if (diff > 0) {
+        setWeeksUntilRace(Math.ceil(diff / (7 * 24 * 60 * 60 * 1000)));
+      } else {
+        setWeeksUntilRace(0);
+      }
+    }
+
+    // Race name
+    const ur = userRacesRes.data?.[0];
+    if (ur?.custom_name) {
+      setRaceName(ur.custom_name);
+    } else if (ur?.race_id) {
+      setRaceName(ur.race_id);
+    }
+
+    // Plan summary from coach messages
+    const planMsg = (coachMsgRes.data || []).find(
+      (m: { action_data: Record<string, unknown> | null }) =>
+        (m.action_data as Record<string, unknown>)?.type === 'plan_explanation'
+    );
+    if (planMsg?.action_data) {
+      const summary = (planMsg.action_data as Record<string, unknown>)?.plan_summary;
+      if (typeof summary === 'string') setPlanSummary(summary);
+      const rn = (planMsg.action_data as Record<string, unknown>)?.race_name;
+      if (typeof rn === 'string' && !raceName) setRaceName(rn);
+    }
 
     const adapted = (todayRes.data || []).find(s => s.adaptation_reason);
     if (adapted) setAdaptation({ message: adapted.adaptation_reason!, auditId: '' });
@@ -223,14 +265,27 @@ export default function TodayPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          {currentIntent && (
+          {weeksUntilRace !== null && raceName ? (
             <p className="text-xs font-bold text-primary tracking-wide">
-              WEEK {currentIntent.week_number}/{17} · {currentIntent.phase.toUpperCase()}
+              {weeksUntilRace > 0 ? `${weeksUntilRace} WEEKS UNTIL ${raceName.toUpperCase()}` : `RACE DAY — ${raceName.toUpperCase()}`}
+            </p>
+          ) : currentIntent && (
+            <p className="text-xs font-bold text-primary tracking-wide">
+              WEEK {currentIntent.week_number}/{totalPlanWeeks || '?'} · {currentIntent.phase.toUpperCase()}
             </p>
           )}
           <h1 className="text-2xl font-extrabold mt-0.5">{todayDate}</h1>
         </div>
       </div>
+
+      {/* Plan summary card */}
+      {planSummary && (
+        <Card className="bg-gradient-to-br from-primary/5 to-purple-500/5 border-primary/15">
+          <CardContent className="py-3 px-4">
+            <p className="text-xs text-muted-foreground leading-relaxed">{planSummary}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Week strip — Runna style */}
       <Card className="overflow-hidden">

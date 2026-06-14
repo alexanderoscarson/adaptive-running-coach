@@ -91,6 +91,7 @@ export default function OnboardingPage() {
 
   // Step 4: Schedule
   const [daysPerWeek, setDaysPerWeek] = useState(4);
+  const [weeklyKm, setWeeklyKm] = useState<string>('');
   const [availableDays, setAvailableDays] = useState<number[]>([]);
   const [sessionLength, setSessionLength] = useState('45-60');
   const [timePreference, setTimePreference] = useState('any');
@@ -304,6 +305,7 @@ export default function OnboardingPage() {
         email: user.email!,
         available_days: availableDays.length > 0 ? availableDays : [1, 3, 5, 6],
         runs_per_week: daysPerWeek,
+        current_weekly_mileage_km: weeklyKm ? parseFloat(weeklyKm) : null,
         onboarding_completed: true,
         onboarding_step: TOTAL_STEPS,
       }, { onConflict: 'id' }).select().single();
@@ -869,6 +871,25 @@ export default function OnboardingPage() {
                       )}>{n}</button>
                     ))}
                   </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-semibold">
+                    {primaryIsRunning ? 'How many km do you currently run per week?' : 'How many km do you currently train per week?'}
+                  </Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={weeklyKm}
+                      onChange={e => setWeeklyKm(e.target.value)}
+                      placeholder="e.g. 20"
+                      className="h-11 rounded-xl flex-1"
+                    />
+                    <span className="text-sm font-bold text-muted-foreground">km</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Leave empty if you&apos;re just starting out.</p>
                 </div>
 
                 <div>

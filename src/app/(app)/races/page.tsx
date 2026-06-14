@@ -147,7 +147,7 @@ export default function RacesPage() {
               <span className="text-2xl">🏃</span>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">
-                  {goalFallback._raceName || 'Race'}
+                  {goalFallback._raceName || (goalFallback.race_distance ? ({ '5k': '5K Race', '10k': '10K Race', 'half_marathon': 'Half Marathon', 'marathon': 'Marathon' } as Record<string, string>)[goalFallback.race_distance] || 'Race' : 'Race')}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {goalFallback._raceDistanceKm

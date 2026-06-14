@@ -172,11 +172,27 @@ export async function POST() {
     }
   }
 
+  // ── POST-GENERATION: Session variety validation ──
+  const allRunSessions = plan.flatMap(w => w.sessions.filter(s => ['easy', 'long', 'tempo', 'intervals', 'hills', 'recovery', 'race'].includes(s.type)));
+  const easyCount = allRunSessions.filter(s => s.type === 'easy').length;
+  const easyRatio = allRunSessions.length > 0 ? easyCount / allRunSessions.length : 0;
+  if (easyRatio > 0.6 && plan.length > 4) {
+    console.warn(`[PlanGenerate] WARNING: ${Math.round(easyRatio * 100)}% of sessions are Easy Runs (${easyCount}/${allRunSessions.length}). Plan may lack variety.`);
+  }
+  console.log(`[PlanGenerate] Session type distribution: Easy=${easyCount}, Long=${allRunSessions.filter(s => s.type === 'long').length}, Tempo=${allRunSessions.filter(s => s.type === 'tempo').length}, Intervals=${allRunSessions.filter(s => s.type === 'intervals').length}, Recovery=${allRunSessions.filter(s => s.type === 'recovery').length}, Race=${allRunSessions.filter(s => s.type === 'race').length}`);
+
+  // ── Weekly km constraint log ──
+  const weeklyKm = profile.current_weekly_mileage_km || 0;
+  console.log(`[PlanGenerate] Weekly km baseline: ${weeklyKm}km | Week 1 total: ${plan[0]?.totalDistanceKm || 0}km (max allowed: ${Math.round(weeklyKm * 1.1)}km)`);
+  if (plan[0] && weeklyKm > 0 && plan[0].totalDistanceKm > weeklyKm * 1.1) {
+    console.warn(`[PlanGenerate] WARNING: Week 1 distance ${plan[0].totalDistanceKm}km exceeds 110% of baseline ${weeklyKm}km`);
+  }
+
   // Log first 3 weeks for audit
   for (const week of plan.slice(0, 3)) {
     const runTypes = ['easy', 'long', 'tempo', 'intervals', 'hills', 'recovery', 'race'];
     const runs = week.sessions.filter(s => runTypes.includes(s.type));
-    console.log(`[PlanGenerate] Week ${week.weekNumber}: ${runs.length} runs on [${runs.map(s => dayNames[s.dayOfWeek]).join(', ')}], total sessions: ${week.sessions.length}`);
+    console.log(`[PlanGenerate] Week ${week.weekNumber}: ${runs.length} runs [${runs.map(s => `${dayNames[s.dayOfWeek]}:${s.type}`).join(', ')}], total ${week.totalDistanceKm}km`);
   }
 
   // ── Write to database ──
@@ -263,9 +279,17 @@ export async function POST() {
     : `I've spread your sessions across the week to balance training and recovery.`;
 
   const runsPerWeek = profile.runs_per_week || 3;
-  const thresholdNote = `Your plan is built around a threshold pace of ${formatPace(thresholdPace)} /km — all training paces are derived from this anchor.`;
+  const weeklyKmNote = weeklyKm > 0
+    ? `The athlete currently runs ${weeklyKm} km per week. The first week of the plan must not exceed this total weekly volume by more than 10%. Build weekly volume gradually from this baseline using a maximum ~10% increase per week.${weeklyKm < 10 ? ' Since weekly volume is under 10km, start with runs of no more than 3–5 km per session and prioritize consistency over distance.' : ''}`
+    : '';
+  const thresholdNote = `Your plan is built around a threshold pace of ${formatPace(thresholdPace)} /km — all training paces are derived from this anchor using zone percentages: Z1 (Recovery) < 80% threshold, Z2 (Easy) 80–88%, Z3 (Tempo) 88–95%, Z4 (Threshold) 95–105%, Z5 (Intervals) 105–120%.`;
 
-  const explanation = `Here's your ${totalWeeks}-week training plan for ${raceName}. ${thresholdNote} ${activityClause} The athlete has selected exactly ${runsPerWeek} run sessions per week. You'll run ${runsPerWeek} times per week, starting with a base-building phase focused on aerobic fitness (80%+ easy pace), before introducing more intensity closer to race day. The plan includes recovery weeks every 3–4 weeks to let your body absorb the training. All recommended paces are expressed in whole 5-second increments (e.g. 5:00, 5:05, 5:10). Never place two recovery runs on consecutive days unless there is a quality session or rest day before them. Distribute run types logically: long run on the highest-availability day, quality sessions spaced with easy/rest days between them.`;
+  const explanation = `Here's your ${totalWeeks}-week training plan for ${raceName}. ${thresholdNote} ${weeklyKmNote} ${activityClause} The athlete has selected exactly ${runsPerWeek} run sessions per week. You'll run ${runsPerWeek} times per week following a periodized structure: Base phase (aerobic foundation, Z1–Z2, pyramidal distribution) → Build phase (introduce threshold/tempo work, shift toward polarized 80/20) → Peak phase (race-specific sessions at goal pace) → Taper (cut volume 40–60%, maintain intensity). Approximately 80% of all sessions are at low intensity (Z1–Z2, easy/long runs). No more than 20% at moderate-to-high intensity (Z3–Z5). This 80/20 distribution is non-negotiable. Recovery weeks with ~30% volume reduction are inserted every 3–4 weeks. Session types vary by phase: Base = Easy Runs + Long Run; Build = Easy + Long + Tempo/Threshold; Peak = Easy + Long + Intervals + Race-pace. Never label all sessions as 'Easy Run' — each session must have a distinct type and purpose. All recommended paces are expressed in whole 5-second increments (e.g. 5:00, 5:05, 5:10). Never place two recovery runs on consecutive days unless there is a quality session or rest day before them. Distribute run types logically: long run on the highest-availability day, quality sessions spaced with easy/rest days between them.`;
+
+  // Generate a short plan summary for the home page
+  const phases = plan.map(w => w.phase);
+  const peakWeek = phases.lastIndexOf('peak') + 1;
+  const planSummary = `Your ${totalWeeks}-week plan for ${raceName} builds from easy aerobic runs to race-specific sessions. ${peakWeek > 0 ? `You'll peak in week ${peakWeek} before a short taper into race day.` : 'The plan progresses from base building through to race day.'} ${runsPerWeek} runs per week, starting at ${weeklyKm > 0 ? `${weeklyKm}km/week` : 'a comfortable baseline'}.`;
 
   // Save explanation as a coach message
   await supabase.from('coach_messages').insert({
@@ -278,6 +302,7 @@ export async function POST() {
       race_name: raceName,
       total_weeks: totalWeeks,
       threshold_pace_kmmin: thresholdPace,
+      plan_summary: planSummary,
     },
   });
 

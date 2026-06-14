@@ -877,13 +877,16 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
   let qualityAdded = 0;
   for (const day of placement.qualityDays) {
     if (sessions.some(s => s.dayOfWeek === day)) continue;
-    if (remainingDistance <= 0) break;
+    // Ensure quality sessions get generated even with low remaining distance
+    const minQualityDist = 4;
+    const qualityDist = Math.max(remainingDistance, minQualityDist);
+    if (remainingDistance <= 0 && qualityAdded > 0) break;
 
     let qualitySession: Omit<PlannedSession, 'dayOfWeek'>;
     if (qualityAdded === 0) {
-      qualitySession = createTempoRun(remainingDistance, paces, phase);
+      qualitySession = createTempoRun(qualityDist, paces, phase);
     } else {
-      qualitySession = createIntervalSession(remainingDistance, paces, phase);
+      qualitySession = createIntervalSession(qualityDist, paces, phase);
     }
     sessions.push({ ...qualitySession, dayOfWeek: day });
     remainingDistance -= qualitySession.distanceKm || 0;
