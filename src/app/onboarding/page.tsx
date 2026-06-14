@@ -412,12 +412,31 @@ export default function OnboardingPage() {
       // Deactivate any existing active goals (handles onboarding retry)
       await supabase.from('goals').update({ active: false }).eq('user_id', user.id).eq('active', true);
 
+      // Compute race date from first selected race
+      let raceDate: string | null = null;
+      if (selectedRaces.length > 0) {
+        const primaryRace = selectedRaces[0];
+        // Use custom race date if available, otherwise estimate from race month
+        const customDate = primaryRace.id.startsWith('custom-') ? customRace.date : null;
+        if (customDate) {
+          raceDate = customDate;
+        } else {
+          const now = new Date();
+          const raceMonth = primaryRace.month - 1;
+          let raceYear = now.getFullYear();
+          if (raceMonth < now.getMonth() || (raceMonth === now.getMonth() && now.getDate() > 15)) {
+            raceYear++;
+          }
+          raceDate = new Date(raceYear, raceMonth, 15).toISOString().split('T')[0];
+        }
+      }
+
       const goalInsert = await supabase.from('goals').insert({
         user_id: user.id,
         type: 'race',
         race_distance: goalDistance,
-        race_date: null,
-        plan_weeks: 17,
+        race_date: raceDate,
+        plan_weeks: weeksUntilFirstRace,
         active: true,
         ...baselineFields,
       }).select().single();

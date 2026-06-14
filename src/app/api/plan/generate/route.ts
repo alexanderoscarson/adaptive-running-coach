@@ -94,8 +94,23 @@ export async function POST() {
   const paces = derivePaces(thresholdPace);
   console.log(`[PlanGenerate] Derived threshold pace: ${formatPace(thresholdPace)} /km`);
 
+  // ── Resolve race name and distance for plan generator ──
+  const userRace = userRacesRes.data?.[0];
+  let resolvedRaceName = 'your race';
+  let resolvedRaceDistanceKm: number | undefined;
+  if (userRace?.custom_name) {
+    resolvedRaceName = userRace.custom_name;
+    if (userRace.custom_distance_km) resolvedRaceDistanceKm = userRace.custom_distance_km;
+  } else if (userRace?.race_id) {
+    const libRace = RACES.find(r => r.id === userRace.race_id);
+    if (libRace) {
+      resolvedRaceName = libRace.name;
+      resolvedRaceDistanceKm = libRace.distanceKm;
+    }
+  }
+
   // ── Generate the plan ──
-  const plan = generatePlan(profile, goal, activeConstraints, lifeActivities);
+  const plan = generatePlan(profile, goal, activeConstraints, lifeActivities, resolvedRaceName, resolvedRaceDistanceKm);
 
   // ── POST-GENERATION VALIDATION ──
   // Strip any strength sessions on unauthorized days (belt-and-suspenders with plan-generator.ts)
@@ -177,15 +192,7 @@ export async function POST() {
   }
 
   // ── Generate plan explanation ──
-  const userRace = userRacesRes.data?.[0];
-  let raceName = 'your race';
-  if (userRace?.custom_name) {
-    raceName = userRace.custom_name;
-  } else if (userRace?.race_id) {
-    const libRace = RACES.find(r => r.id === userRace.race_id);
-    if (libRace) raceName = libRace.name;
-  }
-  // Do NOT fall back to distance enum ("Marathon") — keep "your race" as safe default
+  const raceName = resolvedRaceName;
 
   const totalWeeks = plan.length;
 
@@ -219,7 +226,7 @@ export async function POST() {
   const runsPerWeek = profile.runs_per_week || 3;
   const thresholdNote = `Your plan is built around a threshold pace of ${formatPace(thresholdPace)} /km — all training paces are derived from this anchor.`;
 
-  const explanation = `Here's your ${totalWeeks}-week training plan for ${raceName}. ${thresholdNote} ${activityClause} You'll run ${runsPerWeek} times per week, starting with a base-building phase focused on aerobic fitness (80%+ easy pace), before introducing more intensity closer to race day. The plan includes recovery weeks every 3–4 weeks to let your body absorb the training.`;
+  const explanation = `Here's your ${totalWeeks}-week training plan for ${raceName}. ${thresholdNote} ${activityClause} The athlete has selected exactly ${runsPerWeek} run sessions per week. You'll run ${runsPerWeek} times per week, starting with a base-building phase focused on aerobic fitness (80%+ easy pace), before introducing more intensity closer to race day. The plan includes recovery weeks every 3–4 weeks to let your body absorb the training. All recommended paces are expressed in whole 5-second increments (e.g. 5:00, 5:05, 5:10). Never place two recovery runs on consecutive days unless there is a quality session or rest day before them. Distribute run types logically: long run on the highest-availability day, quality sessions spaced with easy/rest days between them.`;
 
   // Save explanation as a coach message
   await supabase.from('coach_messages').insert({

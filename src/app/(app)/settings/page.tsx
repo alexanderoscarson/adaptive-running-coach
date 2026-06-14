@@ -84,16 +84,12 @@ export default function SettingsPage() {
     setLoading(false);
   }
 
-  async function handleDarkModeChange(mode: 'system' | 'light' | 'dark') {
+  async function handleDarkModeChange(mode: 'light' | 'dark') {
     if (!profile) return;
     setProfile({ ...profile, dark_mode: mode });
     await supabase.from('user_profiles').update({ dark_mode: mode }).eq('id', profile.id);
     if (mode === 'dark') document.documentElement.classList.add('dark');
-    else if (mode === 'light') document.documentElement.classList.remove('dark');
-    else {
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');
-      else document.documentElement.classList.remove('dark');
-    }
+    else document.documentElement.classList.remove('dark');
   }
 
   async function handleLogout() {
@@ -248,9 +244,9 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-2">
-            {(['system', 'light', 'dark'] as const).map(mode => (
-              <Button key={mode} variant={profile.dark_mode === mode ? 'default' : 'outline'} size="sm" onClick={() => handleDarkModeChange(mode)} className="flex-1 capitalize">
-                {mode === 'system' ? (sv ? 'System' : 'System') : mode === 'light' ? (sv ? 'Ljust' : 'Light') : (sv ? 'Mörkt' : 'Dark')}
+            {(['light', 'dark'] as const).map(mode => (
+              <Button key={mode} variant={(profile.dark_mode === mode || (profile.dark_mode === 'system' && mode === 'dark')) ? 'default' : 'outline'} size="sm" onClick={() => handleDarkModeChange(mode)} className="flex-1 capitalize">
+                {mode === 'light' ? (sv ? 'Ljust' : 'Light') : (sv ? 'Mörkt' : 'Dark')}
               </Button>
             ))}
           </div>

@@ -214,8 +214,10 @@ function isRecoveryWeek(weekInPhase: number): boolean {
 // ─── Pace formatting helpers ─────────────────────────────────────────────────
 
 export function formatPace(paceMinKm: number): string {
-  const mins = Math.floor(paceMinKm);
-  const secs = Math.round((paceMinKm - mins) * 60);
+  const totalSeconds = Math.round(paceMinKm * 60);
+  const rounded = Math.round(totalSeconds / 5) * 5;
+  const mins = Math.floor(rounded / 60);
+  const secs = rounded % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
@@ -598,7 +600,9 @@ export function generatePlan(
   profile: UserProfile,
   goal: Goal,
   constraints: Constraint[],
-  lifeActivities: LifeActivity[] = []
+  lifeActivities: LifeActivity[] = [],
+  raceName?: string,
+  raceDistanceKmOverride?: number,
 ): WeekPlan[] {
   const totalWeeks = goal.plan_weeks || 17;
   const raceDistance = goal.race_distance || 'half_marathon';
@@ -729,6 +733,9 @@ export function generatePlan(
         userStrengthDays,
         tier,
         useRunWalk,
+        raceName,
+        raceDate,
+        raceDistanceKm: raceDistanceKmOverride || raceDistanceKm,
       });
 
       weeks.push({
@@ -783,6 +790,9 @@ interface WeekSessionParams {
   userStrengthDays: number[];
   tier: ExperienceTier;
   useRunWalk: boolean;
+  raceName?: string;
+  raceDate?: Date;
+  raceDistanceKm?: number;
 }
 
 function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
@@ -790,7 +800,8 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
     phase, totalDistance, longRunKm, qualitySessions, recovery, isVacation,
     availableDays, longRunDay, loadMap, paces, runsPerWeek,
     weekNumber, strengthPreference, raceDistance, userStrengthDays,
-    tier, useRunWalk,
+    tier, useRunWalk, raceName: raceNameParam, raceDate: raceDateParam,
+    raceDistanceKm: raceDistanceKmParam,
   } = params;
 
   const rwRatio = useRunWalk ? runWalkRatio(weekNumber) : null;
@@ -823,12 +834,43 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
     remainingDistance -= lr.distanceKm || 0;
   }
 
-  // ── Race week ──
+  // ── Race week — place actual race event ──
   if (phase === 'race') {
-    const raceDayIdx = availableDays[availableDays.length - 1] || 6;
-    const raceSession = createRaceDaySession(raceDistance, paces);
-    sessions.push({ ...raceSession, dayOfWeek: raceDayIdx });
-    remainingDistance = Math.max(0, remainingDistance - (raceSession.distanceKm || 0));
+    let raceDayIdx: number;
+    if (raceDateParam) {
+      raceDayIdx = raceDateParam.getDay();
+    } else {
+      raceDayIdx = availableDays[availableDays.length - 1] || 6;
+    }
+    const distKm = raceDistanceKmParam || RACE_DISTANCES_KM[raceDistance as RaceDistance] || 21.1;
+    const displayName = raceNameParam || raceDistance.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const goalPaceRange = formatPaceRange(paces.tempoLow, paces.tempoHigh);
+    const raceSession: PlannedSession = {
+      dayOfWeek: raceDayIdx,
+      type: 'race',
+      title: `${displayName} ${distKm}km`,
+      description: `Race day: ${displayName} (${distKm}km). Target pace: ${goalPaceRange}. Start controlled, build rhythm, finish strong. Trust the plan and enjoy it!`,
+      distanceKm: distKm,
+      targetPaceMinKm: paces.tempo,
+      targetHrZone: 4,
+      durationMinutes: null,
+      structure: {
+        blocks: [
+          { type: 'warmup', description: '10 min easy jog + dynamic stretches', duration_minutes: 10 },
+          { type: 'main', description: `Race at ${goalPaceRange}`, distance_km: distKm },
+          { type: 'cooldown', description: '10 min easy jog + stretching', duration_minutes: 10 },
+        ],
+      },
+      orderInDay: 0,
+    };
+    sessions.push(raceSession);
+    remainingDistance = Math.max(0, remainingDistance - distKm);
+    // Remove any other session on race day
+    for (let i = sessions.length - 1; i >= 0; i--) {
+      if (sessions[i].dayOfWeek === raceDayIdx && sessions[i].type !== 'race') {
+        sessions.splice(i, 1);
+      }
+    }
   }
 
   // ── Quality sessions (tempo / intervals) ──
@@ -943,6 +985,23 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
       const easyReplacement = createEasyRun(s.distanceKm || 5, paces, false, useRunWalk, rwRatio, weekNumber);
       s.description = easyReplacement.description;
       s.structure = easyReplacement.structure;
+    }
+  }
+
+  // 7. No two recovery/easy runs on consecutive days without a quality session between them
+  const sortedSessions = [...sessions].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+  for (let i = 1; i < sortedSessions.length; i++) {
+    const prev = sortedSessions[i - 1];
+    const curr = sortedSessions[i];
+    const prevDay = prev.dayOfWeek;
+    const currDay = curr.dayOfWeek;
+    const isConsecutive = currDay === (prevDay + 1) % 7;
+    if (isConsecutive && (prev.type === 'recovery' || prev.type === 'easy') && (curr.type === 'recovery' || curr.type === 'easy')) {
+      const idx = sessions.findIndex(s => s === curr);
+      if (idx !== -1) {
+        console.warn(`[PlanGenerator] HARD RULE: Removing consecutive recovery/easy run on ${DAY_NAMES[curr.dayOfWeek]} for week ${weekNumber}`);
+        sessions.splice(idx, 1);
+      }
     }
   }
 

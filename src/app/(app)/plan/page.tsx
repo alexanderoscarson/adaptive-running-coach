@@ -64,8 +64,10 @@ const EFFORT_LABELS: Record<number, string> = {
 
 function formatPace(pace: number | null) {
   if (!pace) return '--:--';
-  const mins = Math.floor(pace);
-  const secs = Math.round((pace - mins) * 60);
+  const totalSeconds = Math.round(pace * 60);
+  const rounded = Math.round(totalSeconds / 5) * 5;
+  const mins = Math.floor(rounded / 60);
+  const secs = rounded % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
@@ -148,7 +150,21 @@ export default function PlanPage() {
     const currentWeek = (intentsRes.data || []).find(i => i.week_state === 'current');
     if (currentWeek) {
       setExpandedWeek(currentWeek.week_number);
-      loadWeekSessions(user.id, currentWeek.week_number);
+    }
+    // Preload all sessions so week overview labels work
+    const { data: allSessions } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('session_date')
+      .order('order_in_day');
+    if (allSessions) {
+      const grouped: Record<number, Session[]> = {};
+      for (const s of allSessions) {
+        if (!grouped[s.week_number]) grouped[s.week_number] = [];
+        grouped[s.week_number].push(s);
+      }
+      setSessions(grouped);
     }
     setLoading(false);
   }
@@ -543,6 +559,30 @@ export default function PlanPage() {
                         <span className="font-bold text-foreground">{intent.quality_sessions}</span> quality
                       </p>
                     </div>
+
+                    {/* Session type labels per week */}
+                    {(sessions[intent.week_number] || []).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {(sessions[intent.week_number] || [])
+                          .filter(s => ['easy', 'long', 'tempo', 'intervals', 'hills', 'recovery', 'race'].includes(s.type))
+                          .sort((a, b) => a.day_of_week - b.day_of_week)
+                          .map(s => (
+                            <span key={s.id} className={cn(
+                              'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold',
+                              s.type === 'easy' && 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                              s.type === 'long' && 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+                              s.type === 'tempo' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+                              s.type === 'intervals' && 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+                              s.type === 'hills' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                              s.type === 'recovery' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+                              s.type === 'race' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
+                            )}>
+                              <span className={cn('w-1.5 h-1.5 rounded-full', SESSION_COLORS[s.type])} />
+                              {DAY_NAMES[s.day_of_week]}: {s.type === 'easy' ? 'Easy Run' : s.type === 'long' ? 'Long Run' : s.type === 'tempo' ? 'Tempo' : s.type === 'intervals' ? 'Intervals' : s.type === 'hills' ? 'Hills' : s.type === 'recovery' ? 'Recovery' : s.type === 'race' ? 'Race' : s.title}
+                            </span>
+                          ))}
+                      </div>
+                    )}
                   </CardContent>
                 </button>
 
