@@ -182,24 +182,44 @@ function capLongRunDuration(
 
 // ─── Periodization (Spec Rule 8) ─────────────────────────────────────────────
 
-function getPhaseDistribution(totalWeeks: number): { phase: PlanPhase; weeks: number }[] {
+function getPhaseDistribution(totalWeeks: number, raceDistance: RaceDistance = 'half_marathon'): { phase: PlanPhase; weeks: number }[] {
   if (totalWeeks <= 8) {
+    const taperWeeks = raceDistance === '5k' ? 1 : 1;
     return [
-      { phase: 'base', weeks: 2 },
-      { phase: 'build', weeks: Math.max(2, totalWeeks - 5) },
+      { phase: 'base', weeks: raceDistance === 'marathon' ? 3 : 2 },
+      { phase: 'build', weeks: Math.max(2, totalWeeks - (raceDistance === 'marathon' ? 6 : 5)) },
       { phase: 'peak', weeks: 2 },
-      { phase: 'taper', weeks: 1 },
+      { phase: 'taper', weeks: taperWeeks },
       { phase: 'race', weeks: 1 },
     ];
   }
+
   const raceWeeks = 1;
-  const taperWeeks = totalWeeks >= 16 ? 2 : 1;
-  const peakWeeks = Math.max(2, Math.floor(totalWeeks * 0.18));
-  const baseWeeks = Math.max(3, Math.floor(totalWeeks * 0.30));
+
+  let taperWeeks: number;
+  let peakFrac: number;
+  let baseFrac: number;
+
+  if (raceDistance === '5k' || raceDistance === '10k') {
+    taperWeeks = raceDistance === '5k' ? 1 : (totalWeeks >= 16 ? 2 : 1);
+    baseFrac = 0.22;
+    peakFrac = 0.15;
+  } else if (raceDistance === 'marathon') {
+    taperWeeks = totalWeeks >= 16 ? 2 : 1;
+    baseFrac = 0.35;
+    peakFrac = 0.20;
+  } else {
+    taperWeeks = totalWeeks >= 16 ? 2 : 1;
+    baseFrac = 0.30;
+    peakFrac = 0.18;
+  }
+
+  const peakWeeks = Math.max(2, Math.floor(totalWeeks * peakFrac));
+  const baseWeeks = Math.max(2, Math.floor(totalWeeks * baseFrac));
   const buildWeeks = totalWeeks - baseWeeks - peakWeeks - taperWeeks - raceWeeks;
   return [
     { phase: 'base', weeks: baseWeeks },
-    { phase: 'build', weeks: buildWeeks },
+    { phase: 'build', weeks: Math.max(2, buildWeeks) },
     { phase: 'peak', weeks: peakWeeks },
     { phase: 'taper', weeks: taperWeeks },
     { phase: 'race', weeks: raceWeeks },
@@ -209,6 +229,36 @@ function getPhaseDistribution(totalWeeks: number): { phase: PlanPhase; weeks: nu
 function isRecoveryWeek(weekInPhase: number): boolean {
   // 3-week loading + 1-week recovery (Spec Rule 8)
   return weekInPhase > 0 && (weekInPhase + 1) % 4 === 0;
+}
+
+function weeklyVolumeForWeek(
+  phase: PlanPhase,
+  weekInPhase: number,
+  isRecovery: boolean,
+  floor: number,
+  ceiling: number,
+  totalWeeksInPhase: number,
+): number {
+  if (phase === 'taper' || phase === 'race') {
+    return floor + (ceiling - floor) * (1 - weekInPhase / Math.max(1, totalWeeksInPhase));
+  }
+
+  if (isRecovery) {
+    const cycleIdx = Math.floor(weekInPhase / 4);
+    const progressInPhase = Math.min(1, (cycleIdx + 1) / Math.max(1, Math.ceil(totalWeeksInPhase / 4)));
+    const cycleBase = floor + (ceiling - floor) * progressInPhase * 0.85;
+    return cycleBase * 0.70;
+  }
+
+  const cycleIdx = Math.floor(weekInPhase / 4);
+  const posInCycle = weekInPhase % 4; // 0, 1, 2 are loading; 3 is recovery (handled above)
+  const totalCycles = Math.max(1, Math.ceil(totalWeeksInPhase / 4));
+  const cycleFloor = floor + (ceiling - floor) * (cycleIdx / totalCycles);
+  const cycleCeiling = floor + (ceiling - floor) * ((cycleIdx + 1) / totalCycles);
+  const loadMultipliers = [1.0, 1.08, 1.14];
+  const baseForCycle = cycleFloor + (cycleCeiling - cycleFloor) * 0.5;
+  const raw = baseForCycle * loadMultipliers[posInCycle];
+  return Math.min(raw, ceiling);
 }
 
 // ─── Pace formatting helpers ─────────────────────────────────────────────────
@@ -398,8 +448,8 @@ function createLongRun(
   tier: ExperienceTier,
   useRunWalk: boolean,
   rwRatio: { run: number; walk: number } | null,
+  weekInPhase: number = 0,
 ): Omit<PlannedSession, 'dayOfWeek'> {
-  // Rule 7: cap by time
   const { durationMinutes, distanceKm: cappedDist, capped } = capLongRunDuration(
     distanceKm, paces.long, tier, phase
   );
@@ -412,28 +462,51 @@ function createLongRun(
 
   const purposeNote = 'The long run builds the time-on-feet durability you\'ll need on race day.';
 
+  const canDoAdvancedLong = (phase === 'build' || phase === 'peak') && !useRunWalk;
+  const longVariants = ['plain', 'tempo_finish', 'race_pace_miles', 'progressive'];
+  const variant = canDoAdvancedLong ? longVariants[weekInPhase % longVariants.length] : 'plain';
+
   const blocks: SessionBlock[] = [
     { type: 'warmup', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easyHigh, target_hr_zone: 2 },
   ];
 
-  if ((phase === 'build' || phase === 'peak') && !useRunWalk) {
-    const mainDist = Math.round((cappedDist - 3) * 10) / 10;
+  const mainDist = Math.round((cappedDist - 3) * 10) / 10;
+  let titleSuffix = '';
+
+  if (variant === 'tempo_finish') {
     const tempoDist = Math.round(mainDist * 0.25 * 10) / 10;
     blocks.push(
       { type: 'main', description: `Steady pace at ${paceRange}`, distance_km: mainDist - tempoDist, target_pace_min_km: paces.long, target_hr_zone: 2 },
       { type: 'main', description: `Tempo finish: ${tempoDist} km at ${formatPaceRange(paces.tempoLow, paces.tempoHigh)}`, distance_km: tempoDist, target_pace_min_km: paces.tempo, target_hr_zone: 3 },
     );
+    titleSuffix = ' with Tempo Finish';
+  } else if (variant === 'race_pace_miles') {
+    const rpDist = Math.round(mainDist * 0.2 * 10) / 10;
+    const easyDist = Math.round((mainDist - rpDist * 2) * 10) / 10;
+    blocks.push(
+      { type: 'main', description: `Easy at ${paceRange}`, distance_km: Math.round(easyDist * 0.5 * 10) / 10, target_pace_min_km: paces.long, target_hr_zone: 2 },
+      { type: 'main', description: `Race-pace block: ${rpDist} km at ${formatPaceRange(paces.tempoLow, paces.tempoHigh)}`, distance_km: rpDist, target_pace_min_km: paces.tempo, target_hr_zone: 3 },
+      { type: 'main', description: `Easy at ${paceRange}`, distance_km: Math.round(easyDist * 0.5 * 10) / 10, target_pace_min_km: paces.long, target_hr_zone: 2 },
+      { type: 'main', description: `Race-pace block: ${rpDist} km at ${formatPaceRange(paces.tempoLow, paces.tempoHigh)}`, distance_km: rpDist, target_pace_min_km: paces.tempo, target_hr_zone: 3 },
+    );
+    titleSuffix = ' with Race-Pace Miles';
+  } else if (variant === 'progressive') {
+    const third = Math.round(mainDist / 3 * 10) / 10;
+    blocks.push(
+      { type: 'main', description: `Easy third at ${formatPaceRange(paces.easyLow, paces.easyHigh)}`, distance_km: third, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+      { type: 'main', description: `Steady third at ${paceRange}`, distance_km: third, target_pace_min_km: paces.long, target_hr_zone: 2 },
+      { type: 'main', description: `Tempo third at ${formatPaceRange(paces.tempoLow, paces.tempoHigh)}`, distance_km: third, target_pace_min_km: paces.tempo, target_hr_zone: 3 },
+    );
+    titleSuffix = ' — Progressive';
   } else {
     blocks.push(
-      { type: 'main', description: `Long run at ${paceRange}${useRunWalk && rwRatio ? ` (${rwRatio.run}:${rwRatio.walk} run/walk)` : ''}`, distance_km: cappedDist - 3, target_pace_min_km: paces.long, target_hr_zone: 2 },
+      { type: 'main', description: `Long run at ${paceRange}${useRunWalk && rwRatio ? ` (${rwRatio.run}:${rwRatio.walk} run/walk)` : ''}`, distance_km: mainDist, target_pace_min_km: paces.long, target_hr_zone: 2 },
     );
   }
 
   blocks.push(
     { type: 'cooldown', description: '10 min easy jog + stretching', duration_minutes: 10, target_pace_min_km: paces.easyHigh, target_hr_zone: 1 },
   );
-
-  const titleSuffix = (phase === 'build' || phase === 'peak') && !useRunWalk ? ' with Tempo Finish' : '';
 
   return {
     type: 'long',
@@ -452,52 +525,87 @@ function createTempoRun(
   maxDistance: number,
   paces: DerivedPaces,
   phase: PlanPhase,
+  weekInPhase: number = 0,
 ): Omit<PlannedSession, 'dayOfWeek'> {
   const dist = Math.min(8, maxDistance);
   const mainDist = Math.round((dist - 4) * 10) / 10;
   const paceRange = formatPaceRange(paces.tempoLow, paces.tempoHigh);
+  const threshRange = formatPaceRange(paces.thresholdLow, paces.thresholdHigh);
   const warmupPaceRange = formatPaceRange(paces.easyLow, paces.easyHigh);
 
-  const purposeNote = 'The tempo intervals train your body to hold a comfortably hard pace for longer — this is the most important session of the week.';
+  const purposeNote = 'This threshold session trains your body to hold a comfortably hard pace for longer — the most important quality session of the week.';
 
-  if (phase === 'build' || phase === 'peak') {
-    // Tempo intervals: 4 × 8 min
-    return {
-      type: 'tempo',
-      title: 'Tempo Intervals',
-      description: `Tempo intervals — 4 × 8 min at ${paceRange}, with 2 min easy jog recovery between each. ${purposeNote}`,
-      distanceKm: dist,
-      targetPaceMinKm: paces.tempo,
-      targetHrZone: 3,
-      durationMinutes: Math.round(dist * paces.tempo),
-      structure: {
-        blocks: [
-          { type: 'warmup', description: `15 min easy jog at ${warmupPaceRange} + drills`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
-          { type: 'interval', description: `8 min at ${paceRange}`, duration_minutes: 8, target_pace_min_km: paces.tempo, target_hr_zone: 3, repeats: 4 },
-          { type: 'recovery', description: '2 min easy jog recovery between reps', duration_minutes: 2, target_pace_min_km: paces.recovery },
-          { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy, target_hr_zone: 2 },
-        ],
-      },
-      orderInDay: 0,
-    };
-  }
+  type TempoVariant = { title: string; desc: string; blocks: SessionBlock[] };
 
-  // Base phase: continuous tempo
-  return {
-    type: 'tempo',
-    title: 'Tempo Run',
-    description: `Tempo run — ${mainDist} km at ${paceRange} after warm-up. Comfortably hard effort. ${purposeNote}`,
-    distanceKm: dist,
-    targetPaceMinKm: paces.tempo,
-    targetHrZone: 3,
-    durationMinutes: Math.round(dist * paces.tempo),
-    structure: {
+  const baseMenu: TempoVariant[] = [
+    {
+      title: 'Cruise Intervals',
+      desc: `Cruise intervals — 5 × 6 min at ${threshRange}, 90s jog recovery.`,
+      blocks: [
+        { type: 'warmup', description: `15 min easy jog at ${warmupPaceRange} + drills`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+        { type: 'interval', description: `6 min at ${threshRange}`, duration_minutes: 6, target_pace_min_km: paces.threshold, target_hr_zone: 4, repeats: 5 },
+        { type: 'recovery', description: '90s jog recovery between reps', duration_minutes: 1.5, target_pace_min_km: paces.recovery },
+        { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+      ],
+    },
+    {
+      title: 'Classic Tempo Run',
+      desc: `Continuous tempo — ${mainDist} km at ${paceRange} after warm-up.`,
       blocks: [
         { type: 'warmup', description: `15 min easy jog at ${warmupPaceRange} + drills`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
         { type: 'main', description: `Tempo: ${mainDist} km at ${paceRange}`, distance_km: mainDist, target_pace_min_km: paces.tempo, target_hr_zone: 3 },
         { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy, target_hr_zone: 2 },
       ],
     },
+  ];
+
+  const fullMenu: TempoVariant[] = [
+    baseMenu[0],
+    baseMenu[1],
+    {
+      title: 'Long Threshold Reps',
+      desc: `Long threshold reps — 3 × 10 min at ${threshRange}, 2 min recovery.`,
+      blocks: [
+        { type: 'warmup', description: `15 min easy jog at ${warmupPaceRange} + drills`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+        { type: 'interval', description: `10 min at ${threshRange}`, duration_minutes: 10, target_pace_min_km: paces.threshold, target_hr_zone: 4, repeats: 3 },
+        { type: 'recovery', description: '2 min recovery between reps', duration_minutes: 2, target_pace_min_km: paces.recovery },
+        { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+      ],
+    },
+    {
+      title: 'Tempo Intervals',
+      desc: `Tempo intervals — 4 × 8 min at ${paceRange}, 2 min recovery.`,
+      blocks: [
+        { type: 'warmup', description: `15 min easy jog at ${warmupPaceRange} + drills`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+        { type: 'interval', description: `8 min at ${paceRange}`, duration_minutes: 8, target_pace_min_km: paces.tempo, target_hr_zone: 3, repeats: 4 },
+        { type: 'recovery', description: '2 min recovery between reps', duration_minutes: 2, target_pace_min_km: paces.recovery },
+        { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+      ],
+    },
+    {
+      title: 'Threshold Ladder',
+      desc: `Threshold ladder — 8/10/12/10/8 min at ${threshRange}, 2 min recovery.`,
+      blocks: [
+        { type: 'warmup', description: `15 min easy jog at ${warmupPaceRange} + drills`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+        ...[8, 10, 12, 10, 8].map(mins => ({ type: 'interval' as const, description: `${mins} min at ${threshRange}`, duration_minutes: mins, target_pace_min_km: paces.threshold, target_hr_zone: 4 })),
+        { type: 'recovery', description: '2 min recovery between reps', duration_minutes: 2, target_pace_min_km: paces.recovery },
+        { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+      ],
+    },
+  ];
+
+  const menu = (phase === 'base') ? baseMenu : fullMenu;
+  const chosen = menu[weekInPhase % menu.length];
+
+  return {
+    type: 'tempo',
+    title: chosen.title,
+    description: `${chosen.desc} ${purposeNote}`,
+    distanceKm: dist,
+    targetPaceMinKm: paces.tempo,
+    targetHrZone: 3,
+    durationMinutes: Math.round(dist * paces.tempo),
+    structure: { blocks: chosen.blocks },
     orderInDay: 0,
   };
 }
@@ -506,30 +614,106 @@ function createIntervalSession(
   maxDistance: number,
   paces: DerivedPaces,
   phase: PlanPhase,
+  weekInPhase: number = 0,
 ): Omit<PlannedSession, 'dayOfWeek'> {
   const dist = Math.min(9, maxDistance);
-  const reps = phase === 'peak' ? 6 : 5;
   const vo2Range = formatPaceRange(paces.vo2maxLow, paces.vo2maxHigh);
   const warmupRange = formatPaceRange(paces.easyLow, paces.easyHigh);
+  const paceRange = formatPaceRange(paces.tempoLow, paces.tempoHigh);
 
   const purposeNote = 'These VO₂max intervals build your maximal aerobic power — the engine that drives your race pace.';
 
-  return {
-    type: 'intervals',
-    title: `${reps}×1 km Intervals`,
-    description: `${reps}×1 km at ${vo2Range}, with 400 m easy jog recovery between each. ${purposeNote}`,
-    distanceKm: dist,
-    targetPaceMinKm: paces.vo2max,
-    targetHrZone: 4,
-    durationMinutes: Math.round(dist * paces.easy), // approximate total including recovery
-    structure: {
+  type IntervalVariant = { title: string; desc: string; blocks: SessionBlock[] };
+
+  const buildMenu: IntervalVariant[] = [
+    {
+      title: 'Short VO₂max Intervals',
+      desc: `8 × 600 m at ${vo2Range}, 400 m jog recovery.`,
       blocks: [
         { type: 'warmup', description: `15 min easy jog at ${warmupRange} + strides`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
-        { type: 'interval', description: `1 km at ${vo2Range}`, distance_km: 1, target_pace_min_km: paces.vo2max, target_hr_zone: 4, repeats: reps },
+        { type: 'interval', description: `600 m at ${vo2Range}`, distance_km: 0.6, target_pace_min_km: paces.vo2max, target_hr_zone: 4, repeats: 8 },
         { type: 'recovery', description: '400 m jog recovery between reps', distance_km: 0.4, target_pace_min_km: paces.recovery },
         { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy },
       ],
     },
+    {
+      title: '5×1 km Intervals',
+      desc: `5 × 1 km at ${vo2Range}, 400 m jog recovery.`,
+      blocks: [
+        { type: 'warmup', description: `15 min easy jog at ${warmupRange} + strides`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+        { type: 'interval', description: `1 km at ${vo2Range}`, distance_km: 1, target_pace_min_km: paces.vo2max, target_hr_zone: 4, repeats: 5 },
+        { type: 'recovery', description: '400 m jog recovery between reps', distance_km: 0.4, target_pace_min_km: paces.recovery },
+        { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy },
+      ],
+    },
+    {
+      title: 'VO₂max Long Reps',
+      desc: `4 × 1200 m at ${vo2Range}, 600 m jog recovery.`,
+      blocks: [
+        { type: 'warmup', description: `15 min easy jog at ${warmupRange} + strides`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+        { type: 'interval', description: `1200 m at ${vo2Range}`, distance_km: 1.2, target_pace_min_km: paces.vo2max, target_hr_zone: 4, repeats: 4 },
+        { type: 'recovery', description: '600 m jog recovery between reps', distance_km: 0.6, target_pace_min_km: paces.recovery },
+        { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy },
+      ],
+    },
+    {
+      title: 'Hill Reps',
+      desc: '10 × 75s uphill hard, jog-down recovery.',
+      blocks: [
+        { type: 'warmup', description: `15 min easy jog at ${warmupRange}`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+        { type: 'interval', description: '75s hard uphill effort', duration_minutes: 1.25, target_hr_zone: 4, repeats: 10 },
+        { type: 'recovery', description: 'Jog back down between reps', duration_minutes: 2, target_pace_min_km: paces.recovery },
+        { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy },
+      ],
+    },
+  ];
+
+  const peakMenu: IntervalVariant[] = [
+    buildMenu[0],
+    {
+      title: '6×1 km Intervals',
+      desc: `6 × 1 km at ${vo2Range}, 400 m jog recovery.`,
+      blocks: [
+        { type: 'warmup', description: `15 min easy jog at ${warmupRange} + strides`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+        { type: 'interval', description: `1 km at ${vo2Range}`, distance_km: 1, target_pace_min_km: paces.vo2max, target_hr_zone: 4, repeats: 6 },
+        { type: 'recovery', description: '400 m jog recovery between reps', distance_km: 0.4, target_pace_min_km: paces.recovery },
+        { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy },
+      ],
+    },
+    {
+      title: 'VO₂max Pyramid',
+      desc: `Pyramid: 400/800/1200/800/400 m at ${vo2Range}, equal jog recovery.`,
+      blocks: [
+        { type: 'warmup', description: `15 min easy jog at ${warmupRange} + strides`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+        ...[0.4, 0.8, 1.2, 0.8, 0.4].map(km => ({ type: 'interval' as const, description: `${km * 1000} m at ${vo2Range}`, distance_km: km, target_pace_min_km: paces.vo2max, target_hr_zone: 4 })),
+        { type: 'recovery', description: 'Equal distance jog recovery between reps', distance_km: 0.4, target_pace_min_km: paces.recovery },
+        { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy },
+      ],
+    },
+    {
+      title: 'Race-Pace Blocks',
+      desc: `3 × 2 km at ${paceRange}, 800 m float recovery.`,
+      blocks: [
+        { type: 'warmup', description: `15 min easy jog at ${warmupRange} + strides`, duration_minutes: 15, target_pace_min_km: paces.easy, target_hr_zone: 2 },
+        { type: 'interval', description: `2 km at ${paceRange}`, distance_km: 2, target_pace_min_km: paces.tempo, target_hr_zone: 3, repeats: 3 },
+        { type: 'recovery', description: '800 m float recovery between reps', distance_km: 0.8, target_pace_min_km: paces.easy },
+        { type: 'cooldown', description: '10 min easy jog', duration_minutes: 10, target_pace_min_km: paces.easy },
+      ],
+    },
+  ];
+
+  const menu = phase === 'peak' ? peakMenu : buildMenu;
+  const chosen = menu[weekInPhase % menu.length];
+
+  return {
+    type: 'intervals',
+    title: chosen.title,
+    description: `${chosen.desc} ${purposeNote}`,
+    distanceKm: dist,
+    targetPaceMinKm: paces.vo2max,
+    targetHrZone: 4,
+    durationMinutes: Math.round(dist * paces.easy),
+    structure: { blocks: chosen.blocks },
     orderInDay: 0,
   };
 }
@@ -633,7 +817,7 @@ export function generatePlan(
     : [1, 3, 5, 6];
   const longRunDay = profile.preferred_long_run_day ?? 6;
 
-  const phases = getPhaseDistribution(totalWeeks);
+  const phases = getPhaseDistribution(totalWeeks, raceDistance as RaceDistance);
   const raceDate = goal.race_date
     ? new Date(goal.race_date)
     : addDays(new Date(), totalWeeks * 7);
@@ -655,12 +839,25 @@ export function generatePlan(
   // ── Build week-by-week ──
   const weeks: WeekPlan[] = [];
   let globalWeek = 0;
-  let phaseWeekCounter = 0;
 
   for (const phaseBlock of phases) {
+    const phaseFloor = (() => {
+      if (phaseBlock.phase === 'base') return currentMileage;
+      if (phaseBlock.phase === 'build') return currentMileage + (peakDistance - currentMileage) * 0.35;
+      if (phaseBlock.phase === 'peak') return peakDistance * 0.85;
+      if (phaseBlock.phase === 'taper') return peakDistance * 0.4;
+      return peakDistance * 0.3;
+    })();
+    const phaseCeiling = (() => {
+      if (phaseBlock.phase === 'base') return currentMileage + (peakDistance - currentMileage) * 0.45;
+      if (phaseBlock.phase === 'build') return peakDistance * 0.9;
+      if (phaseBlock.phase === 'peak') return peakDistance;
+      if (phaseBlock.phase === 'taper') return peakDistance * 0.6;
+      return peakDistance * 0.3;
+    })();
+
     for (let w = 0; w < phaseBlock.weeks; w++) {
       globalWeek++;
-      phaseWeekCounter++;
       const weekStart = addDays(planStart, (globalWeek - 1) * 7);
       const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
@@ -671,26 +868,12 @@ export function generatePlan(
         return weekStart >= vs && weekStart <= ve;
       });
 
-      const recovery = isRecoveryWeek(phaseWeekCounter - 1) && phaseBlock.phase !== 'taper' && phaseBlock.phase !== 'race';
+      const recovery = isRecoveryWeek(w) && phaseBlock.phase !== 'taper' && phaseBlock.phase !== 'race';
 
-      // ── Weekly distance calculation ──
-      let weekProgress: number;
-      if (phaseBlock.phase === 'base') {
-        weekProgress = (globalWeek / totalWeeks) * 0.5;
-      } else if (phaseBlock.phase === 'build') {
-        weekProgress = 0.5 + ((globalWeek - phases[0].weeks) / totalWeeks) * 0.35;
-      } else if (phaseBlock.phase === 'peak') {
-        weekProgress = 0.9;
-      } else if (phaseBlock.phase === 'taper') {
-        // Spec Rule 8: reduce volume 40–60% during taper
-        weekProgress = 0.5 - (w * 0.15);
-      } else {
-        weekProgress = 0.3;
-      }
-
-      let totalDistance = currentMileage + (peakDistance - currentMileage) * weekProgress;
-      // Recovery weeks reduce load by 20–40% (Spec Rule 8)
-      if (recovery) totalDistance *= 0.7;
+      // ── Weekly distance calculation (sawtooth) ──
+      let totalDistance = weeklyVolumeForWeek(
+        phaseBlock.phase, w, recovery, phaseFloor, phaseCeiling, phaseBlock.weeks
+      );
       if (isVacation) totalDistance *= 0.3;
       totalDistance = Math.round(totalDistance * 10) / 10;
 
@@ -727,6 +910,7 @@ export function generatePlan(
         paces,
         runsPerWeek,
         weekNumber: globalWeek,
+        weekInPhase: w,
         weekStart,
         strengthPreference: profile.strength_preference || 'none',
         raceDistance,
@@ -784,6 +968,7 @@ interface WeekSessionParams {
   paces: DerivedPaces;
   runsPerWeek: number;
   weekNumber: number;
+  weekInPhase: number;
   weekStart: Date;
   strengthPreference: string;
   raceDistance: string;
@@ -799,7 +984,7 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
   const {
     phase, totalDistance, longRunKm, qualitySessions, recovery, isVacation,
     availableDays, longRunDay, loadMap, paces, runsPerWeek,
-    weekNumber, strengthPreference, raceDistance, userStrengthDays,
+    weekNumber, weekInPhase, strengthPreference, raceDistance, userStrengthDays,
     tier, useRunWalk, raceName: raceNameParam, raceDate: raceDateParam,
     raceDistanceKm: raceDistanceKmParam,
   } = params;
@@ -829,7 +1014,7 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
 
   // ── Long run ──
   if (placement.longDay !== null) {
-    const lr = createLongRun(longRunKm, paces, phase, tier, useRunWalk, rwRatio);
+    const lr = createLongRun(longRunKm, paces, phase, tier, useRunWalk, rwRatio, weekInPhase);
     sessions.push({ ...lr, dayOfWeek: placement.longDay });
     remainingDistance -= lr.distanceKm || 0;
   }
@@ -884,9 +1069,9 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
 
     let qualitySession: Omit<PlannedSession, 'dayOfWeek'>;
     if (qualityAdded === 0) {
-      qualitySession = createTempoRun(qualityDist, paces, phase);
+      qualitySession = createTempoRun(qualityDist, paces, phase, weekInPhase);
     } else {
-      qualitySession = createIntervalSession(qualityDist, paces, phase);
+      qualitySession = createIntervalSession(qualityDist, paces, phase, weekInPhase);
     }
     sessions.push({ ...qualitySession, dayOfWeek: day });
     remainingDistance -= qualitySession.distanceKm || 0;
@@ -1013,7 +1198,7 @@ function generateWeekSessions(params: WeekSessionParams): PlannedSession[] {
 
 // ─── Re-exports for backward compatibility ───────────────────────────────────
 
-export { derivePaces, deriveThresholdPace };
+export { derivePaces, deriveThresholdPace, getPhaseDistribution, weeklyVolumeForWeek };
 
 // Legacy compat — keep pacesFromVdot as a wrapper
 export function pacesFromVdot(vdot: number) {
