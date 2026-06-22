@@ -33,7 +33,9 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage = path.startsWith('/auth');
   const isOnboarding = path.startsWith('/onboarding');
   const isApi = path.startsWith('/api');
-  const isPublic = path === '/';
+  // redesign/v2 preview lives at /v2 and is publicly viewable (additive — existing routes unchanged)
+  const isV2Preview = path === '/v2' || path.startsWith('/v2/');
+  const isPublic = path === '/' || isV2Preview;
 
   if (!user && !isAuthPage && !isPublic && !isApi) {
     const url = request.nextUrl.clone();

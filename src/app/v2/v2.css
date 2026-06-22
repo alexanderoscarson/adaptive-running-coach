@@ -1,0 +1,200 @@
+/* ============================================================================
+   PARROT V2 — Design system (scoped to .v2-scope)
+   ----------------------------------------------------------------------------
+   Electric blue · dark-mode-first · Tanker display + DM Sans body.
+   We DO NOT touch the original globals.css. Instead we re-declare the same
+   token names (read-only reuse) *inside* .v2-scope, so the existing
+   token-driven shadcn/ui components automatically adopt the v2 palette.
+   The light palette is applied when html is NOT in .dark (dark is default).
+   ============================================================================ */
+
+.v2-scope {
+  /* ---- Brand anchors ---- */
+  --v2-electric: #2f6bff;        /* primary electric blue */
+  --v2-electric-bright: #4f8bff; /* hover / highlight */
+  --v2-cyan: #38e0ff;            /* secondary glow accent */
+  --v2-violet: #7c5cff;          /* tertiary gradient stop */
+
+  /* ---- Dark (default) ---- */
+  --background: #060a16;
+  --foreground: #eaf1ff;
+  --card: #0d1426;
+  --card-foreground: #eaf1ff;
+  --popover: #0e1730;
+  --popover-foreground: #eaf1ff;
+  --primary: #2f6bff;
+  --primary-foreground: #ffffff;
+  --secondary: #121d36;
+  --secondary-foreground: #cdddff;
+  --muted: #101a30;
+  --muted-foreground: #8a9bc4;
+  --accent: #38e0ff;
+  --accent-foreground: #051022;
+  --destructive: #ff5a6a;
+  --border: rgba(120, 150, 220, 0.14);
+  --input: rgba(120, 150, 220, 0.18);
+  --ring: #2f6bff;
+
+  --chart-1: #2f6bff;
+  --chart-2: #38e0ff;
+  --chart-3: #7c5cff;
+  --chart-4: #4f8bff;
+  --chart-5: #1e40af;
+
+  --radius: 1rem;
+  --electric: #2f6bff;
+  --glow: rgba(47, 107, 255, 0.22);
+  --glow-cyan: rgba(56, 224, 255, 0.18);
+
+  /* surfaces & gradients */
+  --v2-surface-elev: #111c34;
+  --v2-hairline: rgba(140, 170, 235, 0.12);
+  --v2-grid: rgba(120, 150, 220, 0.10);
+
+  --font-display-v2: "Tanker", var(--font-display), ui-sans-serif, sans-serif;
+
+  /* paint the scope itself (the original body stays whatever it was) */
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  min-height: 100dvh;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Light palette (when dark is toggled off) ---- */
+:where(html:not(.dark)) .v2-scope {
+  --background: #f4f7ff;
+  --foreground: #0a1226;
+  --card: #ffffff;
+  --card-foreground: #0a1226;
+  --popover: #ffffff;
+  --popover-foreground: #0a1226;
+  --primary: #2253e6;
+  --primary-foreground: #ffffff;
+  --secondary: #e7eeff;
+  --secondary-foreground: #16285a;
+  --muted: #eef2fb;
+  --muted-foreground: #5a6b91;
+  --accent: #0aa6d6;
+  --accent-foreground: #ffffff;
+  --destructive: #e23744;
+  --border: rgba(20, 50, 130, 0.14);
+  --input: rgba(20, 50, 130, 0.16);
+  --ring: #2253e6;
+  --electric: #2253e6;
+  --glow: rgba(34, 83, 230, 0.16);
+  --glow-cyan: rgba(10, 166, 214, 0.14);
+  --v2-surface-elev: #ffffff;
+  --v2-hairline: rgba(20, 50, 130, 0.10);
+  --v2-grid: rgba(20, 50, 130, 0.07);
+}
+
+/* ---- Typography ---- */
+.v2-scope :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-display-v2);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 0.98;
+}
+.v2-scope .font-display-v2 {
+  font-family: var(--font-display-v2);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.v2-scope .tabular {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ---- Decorative utilities ---- */
+.v2-scope .v2-grid {
+  background-image: radial-gradient(circle at 1px 1px, var(--v2-grid) 1px, transparent 0);
+  background-size: 34px 34px;
+}
+.v2-scope .v2-aurora {
+  background:
+    radial-gradient(60% 50% at 18% 12%, var(--glow) 0%, transparent 60%),
+    radial-gradient(50% 45% at 88% 8%, var(--glow-cyan) 0%, transparent 55%),
+    radial-gradient(70% 60% at 50% 110%, rgba(124, 92, 255, 0.16) 0%, transparent 60%);
+}
+.v2-scope .v2-gradient-text {
+  background: linear-gradient(100deg, var(--v2-electric-bright), var(--v2-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.v2-scope .v2-card {
+  background-color: var(--card);
+  border: 1px solid var(--v2-hairline);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.03) inset, 0 20px 40px -28px rgba(0, 0, 0, 0.6);
+}
+.v2-scope .v2-glow {
+  box-shadow: 0 0 0 1px var(--v2-hairline), 0 0 60px -18px var(--glow);
+}
+.v2-scope .v2-glow-strong {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 40%, transparent),
+    0 18px 60px -20px var(--glow), 0 0 0 6px color-mix(in oklab, var(--primary) 8%, transparent);
+}
+.v2-scope .v2-ring-focus:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary);
+}
+
+/* ---- Motion ---- */
+@keyframes v2-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes v2-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes v2-rise {
+  from { opacity: 0; transform: translateY(40px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes v2-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes v2-pulse-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+@keyframes v2-shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes v2-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.v2-scope .v2-animate-rise { animation: v2-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.v2-scope .v2-animate-fade-up { animation: v2-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.v2-scope .v2-animate-fade-in { animation: v2-fade-in 0.8s ease both; }
+.v2-scope .v2-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: v2-marquee 38s linear infinite;
+}
+.v2-scope .v2-marquee:hover .v2-marquee-track { animation-play-state: paused; }
+.v2-scope .v2-pulse { animation: v2-pulse-glow 3.2s ease-in-out infinite; }
+
+/* staggered reveal helper */
+.v2-scope [data-stagger] { animation: v2-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+.v2-scope .v2-transition { transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+.v2-scope .v2-lift { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease; }
+.v2-scope .v2-lift:hover { transform: translateY(-4px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-scope *,
+  .v2-scope *::before,
+  .v2-scope *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
