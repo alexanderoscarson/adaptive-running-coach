@@ -1,22 +1,27 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, AlertTriangle, RotateCcw } from "lucide-react";
 import { getRaceById, SPORT_EMOJI, type Race } from "@/lib/races";
 import { useV2I18n } from "../_lib/i18n";
 import { Topbar } from "../_components/topbar";
 import { RacePicker } from "../_components/race-picker";
 import { PlanPreview } from "../_components/plan-preview";
 import {
-  buildPreviewPlan,
   TIER_DEFAULT_KM,
   type ExperienceTier,
   type PreviewResult,
 } from "../_lib/preview-plan";
 
-type Step = "race" | "profile" | "generating" | "preview";
+type Step = "race" | "profile" | "generating" | "preview" | "error";
+
+/** Server returns raceDate as an ISO string over JSON — revive it to a Date so
+ *  the preview components can use it directly. */
+function revivePreview(raw: PreviewResult): PreviewResult {
+  return { ...raw, raceDate: new Date(raw.raceDate) };
+}
 
 const EXPERIENCES: ExperienceTier[] = ["beginner", "intermediate", "advanced", "elite"];
 const LONG_DAYS = [1, 2, 3, 4, 5, 6, 0];
@@ -34,15 +39,41 @@ function OnboardingInner() {
   const [longRunDay, setLongRunDay] = useState<number>(6);
   const [result, setResult] = useState<PreviewResult | null>(null);
 
-  // Generate (with a brief, delightful build animation) then reveal.
+  // Generate SERVER-SIDE (real engine + validation) while a brief build
+  // animation plays. The plan only reveals once it has passed validation;
+  // a validation failure or network error routes to a clean error state.
   useEffect(() => {
     if (step !== "generating" || !race) return;
-    const r = buildPreviewPlan({ race, experience, daysPerWeek, weeklyKm, longRunDay });
-    const timer = setTimeout(() => {
-      setResult(r);
-      setStep("preview");
-    }, 2200);
-    return () => clearTimeout(timer);
+    const ctrl = new AbortController();
+    const startedAt = Date.now();
+    const MIN_ANIM_MS = 1800;
+
+    (async () => {
+      try {
+        const res = await fetch("/v2/api/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ raceId: race.id, experience, daysPerWeek, weeklyKm, longRunDay }),
+          signal: ctrl.signal,
+        });
+        const data = await res.json();
+        const elapsed = Date.now() - startedAt;
+        if (elapsed < MIN_ANIM_MS) {
+          await new Promise((r) => setTimeout(r, MIN_ANIM_MS - elapsed));
+        }
+        if (ctrl.signal.aborted) return;
+        if (res.ok && data?.ok) {
+          setResult(revivePreview(data.result));
+          setStep("preview");
+        } else {
+          setStep("error");
+        }
+      } catch {
+        if (!ctrl.signal.aborted) setStep("error");
+      }
+    })();
+
+    return () => ctrl.abort();
   }, [step, race, experience, daysPerWeek, weeklyKm, longRunDay]);
 
   const stepIndex = step === "race" ? 1 : 2;
@@ -284,6 +315,47 @@ function OnboardingInner() {
                     <span className="text-sm font-semibold text-foreground">{line}</span>
                   </motion.div>
                 ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ===== STEP 3b: ERROR ===== */}
+          {step === "error" && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex min-h-[55vh] flex-col items-center justify-center text-center"
+            >
+              <div
+                className="flex h-14 w-14 items-center justify-center rounded-2xl"
+                style={{ background: "color-mix(in oklab, var(--accent) 14%, transparent)" }}
+              >
+                <AlertTriangle className="h-7 w-7 text-accent" />
+              </div>
+              <h1 className="mt-6 text-3xl sm:text-4xl">{t("ob.gen.error.title")}</h1>
+              <p className="mt-3 max-w-md text-base font-medium leading-relaxed text-muted-foreground">
+                {t("ob.gen.error.body")}
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setStep("generating")}
+                  className="v2-ring-focus v2-transition inline-flex items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-bold text-primary-foreground"
+                  style={{ background: "var(--primary)", boxShadow: "0 14px 40px -12px var(--glow)" }}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  {t("ob.gen.error.retry")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep("profile")}
+                  className="v2-ring-focus v2-transition inline-flex items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-bold text-foreground hover:bg-[var(--secondary)]"
+                  style={{ border: "1px solid var(--v2-hairline)" }}
+                >
+                  {t("ob.gen.error.adjust")}
+                </button>
               </div>
             </motion.div>
           )}

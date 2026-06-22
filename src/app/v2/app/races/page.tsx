@@ -13,7 +13,7 @@ import {
   formatRaceDate,
   nextRaceDate,
 } from "../../_lib/race-meta";
-import { getAppPlan } from "../../_lib/mock-app-data";
+import { useAppPlan } from "../../_lib/app-data";
 import { PageHeader } from "../../_components/app-ui";
 import { RaceCard } from "../../_components/race-card";
 
@@ -21,7 +21,7 @@ const SPORTS: Sport[] = Array.from(new Set(RACES.map((r) => r.sport)));
 
 export default function RacesPage() {
   const { lang, t } = useV2I18n();
-  const current = getAppPlan().race;
+  const current = useAppPlan().race;
   const [query, setQuery] = useState("");
   const [sport, setSport] = useState<Sport | "all">("all");
 

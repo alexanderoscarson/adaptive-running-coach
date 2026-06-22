@@ -1,12 +1,7 @@
 import type { Race } from "@/lib/races";
 import type { UserProfile, Goal } from "@/types/database";
-import { generatePlan, deriveThresholdPace, formatPace, type WeekPlan } from "@/lib/plan-generator";
-import {
-  nextRaceDate,
-  weeksUntil,
-  clampPlanWeeks,
-  distanceToRaceDistance,
-} from "./race-meta";
+import type { WeekPlan } from "@/lib/plan-generator";
+import { distanceToRaceDistance } from "./race-meta";
 
 export type ExperienceTier = "beginner" | "intermediate" | "advanced" | "elite";
 
@@ -57,7 +52,10 @@ function buildAvailableDays(daysPerWeek: number, longRunDay: number): number[] {
   return days.sort((a, b) => a - b);
 }
 
-function buildProfile(input: PreviewInput): UserProfile {
+/** Maps the v2 onboarding input onto the generator's real UserProfile in-type.
+ *  Only fields the deterministic engine actually reads are meaningful; the rest
+ *  are inert defaults so the shape type-checks against the shared type. */
+export function buildProfile(input: PreviewInput): UserProfile {
   const now = new Date().toISOString();
   return {
     id: "preview",
@@ -89,7 +87,8 @@ function buildProfile(input: PreviewInput): UserProfile {
   };
 }
 
-function buildGoal(input: PreviewInput, raceDate: Date, planWeeks: number): Goal {
+/** Maps the chosen race + computed window onto the generator's real Goal in-type. */
+export function buildGoal(input: PreviewInput, raceDate: Date, planWeeks: number): Goal {
   return {
     id: "preview",
     user_id: "preview",
@@ -107,7 +106,7 @@ function buildGoal(input: PreviewInput, raceDate: Date, planWeeks: number): Goal
   };
 }
 
-function summarizePhases(weeks: WeekPlan[]): PhaseSegment[] {
+export function summarizePhases(weeks: WeekPlan[]): PhaseSegment[] {
   const segs: PhaseSegment[] = [];
   for (const w of weeks) {
     const last = segs[segs.length - 1];
@@ -115,24 +114,4 @@ function summarizePhases(weeks: WeekPlan[]): PhaseSegment[] {
     else segs.push({ phase: w.phase, weeks: 1 });
   }
   return segs;
-}
-
-export function buildPreviewPlan(input: PreviewInput): PreviewResult {
-  const raceDate = nextRaceDate(input.race.month);
-  const planWeeks = clampPlanWeeks(weeksUntil(raceDate));
-
-  const profile = buildProfile(input);
-  const goal = buildGoal(input, raceDate, planWeeks);
-
-  const weeks = generatePlan(profile, goal, [], [], input.race.name, input.race.distanceKm);
-  const thresholdPace = deriveThresholdPace(goal, profile);
-
-  return {
-    weeks,
-    planWeeks: weeks.length,
-    raceDate,
-    phases: summarizePhases(weeks),
-    thresholdPaceLabel: formatPace(thresholdPace),
-    totalSessions: weeks.reduce((n, w) => n + w.sessions.length, 0),
-  };
 }

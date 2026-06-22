@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { Target, CalendarClock, Ruler, Languages, Palette, LogOut, ArrowUpRight } from "lucide-react";
 import { SPORT_EMOJI } from "@/lib/races";
 import { useV2I18n } from "../../_lib/i18n";
-import { getAppPlan } from "../../_lib/mock-app-data";
+import { useAppPlan } from "../../_lib/app-data";
 import { PageHeader, MockNote, MockTag } from "../../_components/app-ui";
 
 const DAYS = [3, 4, 5, 6];
@@ -18,7 +18,7 @@ export default function ProfilePage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const race = getAppPlan().race;
+  const race = useAppPlan().race;
   const [daysPerWeek, setDaysPerWeek] = useState(5);
   const [longRunDay, setLongRunDay] = useState(0);
   const [weeklyKm, setWeeklyKm] = useState(42);

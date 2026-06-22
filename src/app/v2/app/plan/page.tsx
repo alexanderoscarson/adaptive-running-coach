@@ -4,15 +4,16 @@ import { motion } from "framer-motion";
 import { useV2I18n } from "../../_lib/i18n";
 import { formatDayLabel } from "../../_lib/race-meta";
 import { PHASE_COLOR } from "../../_lib/session-style";
-import { getAppPlan, getCurrentWeek, daysToRace } from "../../_lib/mock-app-data";
+import { getCurrentWeek, daysToRace } from "../../_lib/mock-app-data";
+import { useAppPlan } from "../../_lib/app-data";
 import { PageHeader, MockNote } from "../../_components/app-ui";
 import { WeekStrip } from "../../_components/week-strip";
 
 export default function PlanPage() {
   const { lang, t } = useV2I18n();
-  const plan = getAppPlan();
-  const currentWeek = getCurrentWeek().weekNumber;
-  const days = daysToRace();
+  const plan = useAppPlan();
+  const currentWeek = getCurrentWeek(plan).weekNumber;
+  const days = daysToRace(plan);
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8">

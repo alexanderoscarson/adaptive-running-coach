@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send } from "lucide-react";
 import { useV2I18n } from "../../_lib/i18n";
-import { getAppPlan } from "../../_lib/mock-app-data";
+import { useAppPlan } from "../../_lib/app-data";
 import { PageHeader, MockNote } from "../../_components/app-ui";
 
 interface Msg {
@@ -14,7 +14,7 @@ interface Msg {
 
 export default function CoachPage() {
   const { t } = useV2I18n();
-  const race = getAppPlan().race;
+  const race = useAppPlan().race;
   const [messages, setMessages] = useState<Msg[]>([{ role: "coach", text: t("coach.intro", { race: race.name }) }]);
   const [draft, setDraft] = useState("");
   const [typing, setTyping] = useState(false);

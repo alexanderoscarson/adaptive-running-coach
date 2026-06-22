@@ -10,7 +10,8 @@ import type { SessionType } from "@/types/database";
 import { useV2I18n, type Language } from "../../../_lib/i18n";
 import { formatDayLabel } from "../../../_lib/race-meta";
 import { SESSION_TONE, SESSION_ICON, BLOCK_LABEL, PHASE_COLOR } from "../../../_lib/session-style";
-import { getSessionById, getAppPlan } from "../../../_lib/mock-app-data";
+import { getSessionById } from "../../../_lib/mock-app-data";
+import { useAppPlan } from "../../../_lib/app-data";
 import { MockNote, MockTag } from "../../../_components/app-ui";
 
 /* Effort tier per session type — drives the qualitative zone + mock power/CSS. */
@@ -42,7 +43,8 @@ function blockMetric(b: PlannedSession["structure"]["blocks"][number]): string {
 export default function SessionPage() {
   const { lang, t } = useV2I18n();
   const params = useParams<{ id: string }>();
-  const found = getSessionById(params.id);
+  const plan = useAppPlan();
+  const found = getSessionById(plan, params.id);
   const [done, setDone] = useState(false);
 
   if (!found) {
@@ -58,7 +60,6 @@ export default function SessionPage() {
   }
 
   const { session, week } = found;
-  const plan = getAppPlan();
   const Icon = SESSION_ICON[session.type];
   const tone = SESSION_TONE[session.type];
   const effort = EFFORT[session.type];

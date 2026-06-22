@@ -9,12 +9,12 @@ import { useV2I18n } from "../_lib/i18n";
 import { formatDayLabel, isSameDay } from "../_lib/race-meta";
 import { SESSION_TONE, SESSION_ICON, sessionDetail } from "../_lib/session-style";
 import {
-  getAppPlan,
   getNextSession,
   getCurrentWeek,
   daysToRace,
   fitnessTrend,
 } from "../_lib/mock-app-data";
+import { useAppPlan } from "../_lib/app-data";
 import { PageHeader, MockNote, MockTag } from "../_components/app-ui";
 import { WeekStrip } from "../_components/week-strip";
 
@@ -22,10 +22,10 @@ const FEELINGS = ["fresh", "ok", "tired"] as const;
 
 export default function HomePage() {
   const { lang, t } = useV2I18n();
-  const plan = getAppPlan();
-  const next = getNextSession();
-  const week = getCurrentWeek();
-  const days = daysToRace();
+  const plan = useAppPlan();
+  const next = getNextSession(plan);
+  const week = getCurrentWeek(plan);
+  const days = daysToRace(plan);
   const [feel, setFeel] = useState<string | null>(null);
 
   const tsbNow = fitnessTrend.points[fitnessTrend.points.length - 1].tsb;

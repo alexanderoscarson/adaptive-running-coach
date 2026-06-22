@@ -97,6 +97,15 @@ const sv: Dict = {
   "ob.gen.periodize": "Periodiserar mot loppdagen",
   "ob.gen.pace": "Räknar fram dina pacezoner",
   "ob.gen.place": "Placerar pass runt ditt liv",
+  "ob.gen.error.title": "Något gick fel",
+  "ob.gen.error.body":
+    "Vi kunde inte bygga en plan som klarade vår kvalitetskontroll just nu. Försök igen, eller justera dina val.",
+  "ob.gen.error.retry": "Försök igen",
+  "ob.gen.error.adjust": "Justera mina val",
+  "planError.title": "Planen är inte tillgänglig",
+  "planError.body":
+    "Vi kunde inte visa en plan som klarade kvalitetskontrollen. Bygg om din plan så försöker vi igen.",
+  "planError.retry": "Bygg om planen",
 
   "ob.prev.eyebrow": "Din plan — förhandsvisning",
   "ob.prev.ready": "Planen är klar.",
@@ -132,7 +141,7 @@ const sv: Dict = {
   "mock.real":
     "PÅ RIKTIGT: loppkatalogen och planen genereras live av Parrots riktiga motor (periodisering, pacezoner, passlogik enligt specen).",
   "mock.persist":
-    "MOCK: inget sparas — planen genereras i din webbläsare utan konto eller backend.",
+    "MOCK: inget sparas — planen genereras på servern men lagras inte utan konto.",
   "mock.sport":
     "MOCK: för cykel/skidor/sim visas löpmotorn som illustration. Den fullständiga multisport-motorn är nästa steg.",
   "mock.threshold":
@@ -413,6 +422,15 @@ const en: Dict = {
   "ob.gen.periodize": "Periodizing toward race day",
   "ob.gen.pace": "Computing your pace zones",
   "ob.gen.place": "Placing sessions around your life",
+  "ob.gen.error.title": "Something went wrong",
+  "ob.gen.error.body":
+    "We couldn't build a plan that passed our quality checks just now. Try again, or adjust your choices.",
+  "ob.gen.error.retry": "Try again",
+  "ob.gen.error.adjust": "Adjust my choices",
+  "planError.title": "Plan unavailable",
+  "planError.body":
+    "We couldn't show a plan that passed the quality checks. Rebuild your plan and we'll try again.",
+  "planError.retry": "Rebuild the plan",
 
   "ob.prev.eyebrow": "Your plan — preview",
   "ob.prev.ready": "Your plan is ready.",
@@ -448,7 +466,7 @@ const en: Dict = {
   "mock.real":
     "REAL: the race catalog and the plan are generated live by Parrot's actual engine (periodization, pace zones, session logic per the spec).",
   "mock.persist":
-    "MOCK: nothing is saved — the plan is generated in your browser with no account or backend.",
+    "MOCK: nothing is saved — the plan is generated on the server but not stored without an account.",
   "mock.sport":
     "MOCK: for cycling/skiing/swimming the running engine is shown as an illustration. The full multi-sport engine is the next step.",
   "mock.threshold":
