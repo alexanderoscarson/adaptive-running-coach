@@ -189,7 +189,7 @@ export async function chatWithCoach(
   ];
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 400,
     system: COACH_SYSTEM_PROMPT,
     tools: [PLAN_MODIFICATION_TOOL],
@@ -225,7 +225,7 @@ ${missedSessions.length > 0 ? `2. Acknowledge missed session(s): ${missedSession
 Keep it to 3-4 sentences. Warm, conversational tone. If their language preference is 'sv', write in Swedish using informal "du".`;
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 300,
     system: COACH_SYSTEM_PROMPT,
     messages: [
@@ -255,7 +255,7 @@ Respond with:
 2. Use the propose_plan_modification tool if changes are needed`;
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 400,
     system: COACH_SYSTEM_PROMPT,
     tools: [PLAN_MODIFICATION_TOOL],

@@ -13,7 +13,7 @@ interface Msg {
 }
 
 export default function CoachPage() {
-  const { t } = useV2I18n();
+  const { t, lang } = useV2I18n();
   const race = useAppPlan().race;
   const [messages, setMessages] = useState<Msg[]>([{ role: "coach", text: t("coach.intro", { race: race.name }) }]);
   const [draft, setDraft] = useState("");
@@ -24,16 +24,39 @@ export default function CoachPage() {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, typing]);
 
-  function send(text: string) {
+  async function send(text: string) {
     const clean = text.trim();
     if (!clean || typing) return;
-    setMessages((m) => [...m, { role: "user", text: clean }]);
+
+    // Build the API history from the real conversation, dropping the canned
+    // intro (index 0) so it starts on a user turn, and mapping our "coach" role
+    // to the "assistant" role the coach engine expects.
+    const nextMessages: Msg[] = [...messages, { role: "user", text: clean }];
+    const history = nextMessages
+      .slice(1)
+      .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.text }));
+
+    setMessages(nextMessages);
     setDraft("");
     setTyping(true);
-    setTimeout(() => {
-      setMessages((m) => [...m, { role: "coach", text: t("coach.reply") }]);
+
+    try {
+      const res = await fetch("/v2/api/coach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history, language: lang }),
+      });
+      const data = await res.json();
+      const reply =
+        res.ok && (data?.message || data?.proposal?.summary)
+          ? data.message || data.proposal.summary
+          : t("coach.error");
+      setMessages((m) => [...m, { role: "coach", text: reply }]);
+    } catch {
+      setMessages((m) => [...m, { role: "coach", text: t("coach.error") }]);
+    } finally {
       setTyping(false);
-    }, 1100);
+    }
   }
 
   const showSuggestions = messages.length <= 1;
@@ -122,7 +145,7 @@ export default function CoachPage() {
       </form>
 
       <div className="mt-4">
-        <MockNote>{t("mock.app.coach")}</MockNote>
+        <MockNote>{t("coach.note")}</MockNote>
       </div>
     </div>
   );

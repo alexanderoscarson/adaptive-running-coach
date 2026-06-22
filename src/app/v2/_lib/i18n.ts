@@ -310,6 +310,10 @@ const sv: Dict = {
   "coach.suggest.3": "Hur ligger jag till mot loppet?",
   "coach.reply":
     "Bra fråga! När den riktiga coachen är inkopplad svarar jag utifrån din plan, dina senaste pass och hur du mått. Just nu är det här bara ett gränssnitt — men så här kommer det att kännas.",
+  "coach.error":
+    "Hoppsan — jag kunde inte svara just nu. Försök igen om en stund.",
+  "coach.note":
+    "PÅ RIKTIGT: coachen drivs nu av Parrots AI och känner till din plan och dina kommande pass. MOCK: samtalet sparas inte och föreslagna planändringar tillämpas inte i förhandsvisningen.",
 
   /* -- profile / settings -- */
   "prof.eyebrow": "Profil & inställningar",
@@ -635,6 +639,10 @@ const en: Dict = {
   "coach.suggest.3": "How am I tracking for the race?",
   "coach.reply":
     "Great question! Once the real coach is connected, I'll answer based on your plan, your latest sessions and how you've felt. Right now this is just the interface — but this is how it'll feel.",
+  "coach.error":
+    "Oops — I couldn't reply just now. Try again in a moment.",
+  "coach.note":
+    "REAL: the coach is now powered by Parrot's AI and knows your plan and your upcoming sessions. MOCK: the conversation isn't saved and proposed plan changes aren't applied in this preview.",
 
   /* -- profile / settings -- */
   "prof.eyebrow": "Profile & settings",
