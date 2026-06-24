@@ -37,7 +37,7 @@ export const TIER_DEFAULT_KM: Record<ExperienceTier, number> = {
   elite: 85,
 };
 
-function buildAvailableDays(daysPerWeek: number, longRunDay: number): number[] {
+export function buildAvailableDays(daysPerWeek: number, longRunDay: number): number[] {
   // Preference order spreads hard/easy days out; long-run day forced in.
   const order = [longRunDay, 2, 4, 1, 3, 0, 5, 6];
   const seen = new Set<number>();

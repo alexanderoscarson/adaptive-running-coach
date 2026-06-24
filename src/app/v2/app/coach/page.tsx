@@ -28,23 +28,18 @@ export default function CoachPage() {
     const clean = text.trim();
     if (!clean || typing) return;
 
-    // Build the API history from the real conversation, dropping the canned
-    // intro (index 0) so it starts on a user turn, and mapping our "coach" role
-    // to the "assistant" role the coach engine expects.
-    const nextMessages: Msg[] = [...messages, { role: "user", text: clean }];
-    const history = nextMessages
-      .slice(1)
-      .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.text }));
-
-    setMessages(nextMessages);
+    // The real coach route (/api/coach) is authenticated, loads the athlete's
+    // plan + recent training as context, persists the exchange, and returns the
+    // reply. We send the latest message + language; history lives server-side.
+    setMessages((m) => [...m, { role: "user", text: clean }]);
     setDraft("");
     setTyping(true);
 
     try {
-      const res = await fetch("/v2/api/coach", {
+      const res = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, language: lang }),
+        body: JSON.stringify({ message: clean, language: lang }),
       });
       const data = await res.json();
       const reply =

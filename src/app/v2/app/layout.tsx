@@ -1,34 +1,28 @@
+export const dynamic = "force-dynamic";
+
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 import { AppShell } from "../_components/app-shell";
 import { AppPlanProvider } from "../_lib/app-data";
-import { PlanUnavailable } from "../_components/plan-unavailable";
-import { generateValidatedPlan } from "../_lib/generate-plan";
-import { buildAppPlan, buildDemoPreviewInput } from "../_lib/mock-app-data";
+import { loadUserAppPlan } from "../_lib/load-user-plan";
 
 /* In-app surfaces (home / plan / session / progress / races / coach / profile).
-   Sits inside the v2 layout's .v2-scope, so it inherits the whole design system
-   and the loaded display font.
+   Auth-gated: reads the logged-in athlete's REAL saved plan from Supabase
+   server-side and provides it via context. Unauthenticated users or users
+   without a plan are sent to onboarding to create one. */
+export default async function V2AppLayout({ children }: { children: ReactNode }) {
+  const result = await loadUserAppPlan();
 
-   The demo plan is generated + validated SERVER-SIDE here (no engine on the
-   client, no key exposed) and provided to the surfaces via context. If the plan
-   fails validation we render a clean fallback instead of broken data. */
-export default function V2AppLayout({ children }: { children: ReactNode }) {
-  const input = buildDemoPreviewInput();
-  const gen = input ? generateValidatedPlan(input) : null;
-
-  if (!gen || !gen.ok || !input) {
-    return (
-      <AppShell>
-        <PlanUnavailable />
-      </AppShell>
-    );
+  if (result.status === "unauthenticated") {
+    redirect("/v2/onboarding?signin=1");
   }
-
-  const plan = buildAppPlan(gen.result, input.race);
+  if (result.status === "no-plan") {
+    redirect("/v2/onboarding");
+  }
 
   return (
     <AppShell>
-      <AppPlanProvider plan={plan}>{children}</AppPlanProvider>
+      <AppPlanProvider plan={result.plan}>{children}</AppPlanProvider>
     </AppShell>
   );
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, RotateCcw, Activity, CalendarDays, Gauge, Flag, Info } from "lucide-react";
 import type { Race } from "@/lib/races";
@@ -35,10 +34,12 @@ export function PlanPreview({
   race,
   result,
   onRestart,
+  onCreateAccount,
 }: {
   race: Race;
   result: PreviewResult;
   onRestart: () => void;
+  onCreateAccount: () => void;
 }) {
   const { lang, t } = useV2I18n();
   const days = daysUntil(result.raceDate);
@@ -240,14 +241,15 @@ export function PlanPreview({
 
       {/* ===== ACTIONS ===== */}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Link
-          href="/auth/signup"
+        <button
+          type="button"
+          onClick={onCreateAccount}
           className="v2-ring-focus v2-transition group inline-flex flex-1 items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-bold text-primary-foreground"
           style={{ background: "var(--primary)", boxShadow: "0 14px 40px -12px var(--glow)" }}
         >
           {t("ob.prev.cta")}
           <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-        </Link>
+        </button>
         <button
           type="button"
           onClick={onRestart}
