@@ -35,7 +35,9 @@ export async function updateSession(request: NextRequest) {
   const isApi = path.startsWith('/api');
   // redesign/v2 preview lives at /v2 and is publicly viewable (additive — existing routes unchanged)
   const isV2Preview = path === '/v2' || path.startsWith('/v2/');
-  const isPublic = path === '/' || isV2Preview;
+  // redesign/v3 preview lives at /v3 — same additive public exception as /v2
+  const isV3Preview = path === '/v3' || path.startsWith('/v3/');
+  const isPublic = path === '/' || isV2Preview || isV3Preview;
 
   if (!user && !isAuthPage && !isPublic && !isApi) {
     const url = request.nextUrl.clone();

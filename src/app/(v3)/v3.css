@@ -1,0 +1,379 @@
+/* ============================================================================
+   PARROT V3 — Design system (scoped to .v3-scope)
+   ----------------------------------------------------------------------------
+   "Loppet är hjälten." Electric blue on near-black, dark-mode-first with a
+   light mode via the existing next-themes toggle. Tanker display + DM Sans
+   body + JetBrains Mono for data. All shadcn token names are re-declared
+   inside the scope (read-only reuse) so token-driven components adopt the
+   v3 palette without touching globals.css.
+   ============================================================================ */
+
+.v3-scope {
+  /* ---- Brand anchors ---- */
+  --v3-electric: #2e63ff;        /* primary */
+  --v3-electric-bright: #6d9bff; /* hover / highlight on dark */
+  --v3-ice: #9bd8ff;             /* high notes */
+  --v3-cyan: #3fe0ff;            /* threshold / tempo accent */
+  --v3-violet: #8b7cff;          /* long / depth accent */
+  --v3-ember: #ffb454;           /* race day. The only warm thing here. */
+
+  /* ---- Phase colors (periodization is a first-class visual) ---- */
+  --v3-phase-base: #3fa0ff;
+  --v3-phase-build: #2e63ff;
+  --v3-phase-peak: #8b7cff;
+  --v3-phase-taper: #3fe0ff;
+  --v3-phase-race: #ffb454;
+
+  /* ---- Dark (default) ---- */
+  --background: #04060c;
+  --foreground: #f2f6ff;
+  --card: #0a0f1c;
+  --card-foreground: #f2f6ff;
+  --popover: #0c1222;
+  --popover-foreground: #f2f6ff;
+  --primary: #2e63ff;
+  --primary-foreground: #ffffff;
+  --secondary: #101729;
+  --secondary-foreground: #cfe0ff;
+  --muted: #0d1425;
+  --muted-foreground: #8494bd;
+  --accent: #3fe0ff;
+  --accent-foreground: #041018;
+  --destructive: #ff5a6a;
+  --border: rgba(130, 160, 230, 0.13);
+  --input: rgba(130, 160, 230, 0.16);
+  --ring: #2e63ff;
+
+  --chart-1: #2e63ff;
+  --chart-2: #3fe0ff;
+  --chart-3: #8b7cff;
+  --chart-4: #6d9bff;
+  --chart-5: #ffb454;
+
+  --radius: 1.1rem;
+  --electric: #2e63ff;
+  --glow: rgba(46, 99, 255, 0.25);
+  --glow-cyan: rgba(63, 224, 255, 0.16);
+  --glow-ember: rgba(255, 180, 84, 0.18);
+
+  --v3-surface: #0a0f1c;
+  --v3-surface-elev: #0f1628;
+  --v3-hairline: rgba(150, 178, 240, 0.11);
+  --v3-hairline-strong: rgba(150, 178, 240, 0.22);
+  --v3-grid: rgba(130, 160, 230, 0.09);
+
+  /* ---- Type ---- */
+  --font-display-v3: "Tanker", var(--font-display), ui-sans-serif, sans-serif;
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  min-height: 100dvh;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---- Light palette (when dark is toggled off) ---- */
+:where(html:not(.dark)) .v3-scope {
+  --background: #f3f6fe;
+  --foreground: #0a1024;
+  --card: #ffffff;
+  --card-foreground: #0a1024;
+  --popover: #ffffff;
+  --popover-foreground: #0a1024;
+  --primary: #1e4fe6;
+  --primary-foreground: #ffffff;
+  --secondary: #e6edff;
+  --secondary-foreground: #12245c;
+  --muted: #eaf0fc;
+  --muted-foreground: #53638d;
+  --accent: #0899c6;
+  --accent-foreground: #ffffff;
+  --destructive: #e23744;
+  --border: rgba(18, 46, 130, 0.14);
+  --input: rgba(18, 46, 130, 0.16);
+  --ring: #1e4fe6;
+
+  --electric: #1e4fe6;
+  --glow: rgba(30, 79, 230, 0.14);
+  --glow-cyan: rgba(8, 153, 198, 0.12);
+  --glow-ember: rgba(224, 138, 30, 0.16);
+
+  --v3-electric-bright: #1e4fe6;
+  --v3-ice: #1a6fd6;
+  --v3-cyan: #0899c6;
+  --v3-violet: #6a58e8;
+  --v3-ember: #e08a1e;
+
+  --v3-phase-base: #2f83e0;
+  --v3-phase-build: #1e4fe6;
+  --v3-phase-peak: #6a58e8;
+  --v3-phase-taper: #0899c6;
+  --v3-phase-race: #e08a1e;
+
+  --v3-surface: #ffffff;
+  --v3-surface-elev: #ffffff;
+  --v3-hairline: rgba(18, 46, 130, 0.10);
+  --v3-hairline-strong: rgba(18, 46, 130, 0.22);
+  --v3-grid: rgba(18, 46, 130, 0.07);
+}
+
+/* ============================ Typography ============================ */
+
+.v3-scope :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-display-v3);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 0.94;
+  text-wrap: balance;
+}
+.v3-scope .v3-display {
+  font-family: var(--font-display-v3);
+  font-size: clamp(3.4rem, 11vw, 9.5rem);
+  line-height: 0.88;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+}
+.v3-scope .v3-h2 {
+  font-family: var(--font-display-v3);
+  font-size: clamp(2.2rem, 5.5vw, 4.4rem);
+  line-height: 0.94;
+  text-transform: uppercase;
+}
+.v3-scope .v3-h3 {
+  font-family: var(--font-display-v3);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+.v3-scope .v3-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--v3-electric-bright);
+}
+.v3-scope .v3-mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.v3-scope .v3-gradient-text {
+  background: linear-gradient(97deg, var(--v3-electric-bright) 5%, var(--v3-cyan) 60%, var(--v3-ice) 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.v3-scope ::selection {
+  background: var(--v3-electric);
+  color: #fff;
+}
+
+/* ============================ Surfaces ============================ */
+
+.v3-scope .v3-card {
+  background-color: var(--card);
+  border: 1px solid var(--v3-hairline);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -32px rgba(0, 0, 0, 0.65);
+}
+:where(html:not(.dark)) .v3-scope .v3-card {
+  box-shadow: 0 1px 2px rgba(10, 20, 60, 0.05), 0 16px 40px -28px rgba(10, 20, 60, 0.25);
+}
+.v3-scope .v3-glow {
+  box-shadow: 0 0 0 1px var(--v3-hairline), 0 0 70px -16px var(--glow);
+}
+.v3-scope .v3-glow-strong {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--primary) 45%, transparent),
+    0 20px 70px -24px var(--glow),
+    0 0 0 6px color-mix(in oklab, var(--primary) 8%, transparent);
+}
+.v3-scope .v3-hairline-t { border-top: 1px solid var(--v3-hairline); }
+.v3-scope .v3-hairline-b { border-bottom: 1px solid var(--v3-hairline); }
+
+/* Dotted engineering grid + aurora atmosphere */
+.v3-scope .v3-grid-bg {
+  background-image: radial-gradient(circle at 1px 1px, var(--v3-grid) 1px, transparent 0);
+  background-size: 36px 36px;
+}
+.v3-scope .v3-aurora {
+  background:
+    radial-gradient(55% 45% at 15% 8%, var(--glow) 0%, transparent 62%),
+    radial-gradient(45% 40% at 85% 4%, var(--glow-cyan) 0%, transparent 58%),
+    radial-gradient(75% 55% at 50% 112%, color-mix(in oklab, var(--v3-violet) 16%, transparent) 0%, transparent 62%);
+}
+/* Film grain — data-URI turbulence, purely decorative */
+.v3-scope .v3-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================ Controls ============================ */
+
+.v3-scope .v3-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  padding: 0.9rem 1.7rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out),
+    background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  will-change: transform;
+}
+.v3-scope .v3-btn:active { transform: scale(0.97); }
+.v3-scope .v3-btn-primary {
+  background: linear-gradient(120deg, var(--v3-electric) 0%, color-mix(in oklab, var(--v3-electric) 70%, var(--v3-cyan)) 100%);
+  color: #fff;
+  box-shadow: 0 12px 34px -12px var(--glow), 0 0 0 1px color-mix(in oklab, var(--v3-electric) 55%, transparent);
+}
+.v3-scope .v3-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 44px -12px var(--glow), 0 0 0 1px var(--v3-electric);
+}
+.v3-scope .v3-btn-ghost {
+  background: transparent;
+  color: var(--foreground);
+  border-color: var(--v3-hairline-strong);
+}
+.v3-scope .v3-btn-ghost:hover {
+  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 8%, transparent);
+}
+.v3-scope .v3-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--v3-hairline-strong);
+  padding: 0.45rem 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+.v3-scope .v3-chip:hover { color: var(--foreground); border-color: var(--primary); }
+.v3-scope .v3-chip[data-active="true"] {
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+  border-color: var(--primary);
+  color: var(--foreground);
+}
+.v3-scope :is(button, a, input, [role="tab"], [role="radio"]):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary);
+  border-radius: 8px;
+}
+
+/* Range slider (volume) */
+.v3-scope input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--v3-electric) var(--fill, 40%), var(--input) var(--fill, 40%));
+  cursor: pointer;
+}
+.v3-scope input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--v3-electric);
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--v3-electric) 18%, transparent);
+  transition: transform 0.2s var(--ease-out);
+}
+.v3-scope input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.12); }
+.v3-scope input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--v3-electric);
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--v3-electric) 18%, transparent);
+}
+
+/* ============================ Motion ============================ */
+
+@keyframes v3-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes v3-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+@keyframes v3-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+@keyframes v3-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes v3-scroll-hint {
+  0% { transform: translateY(0); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateY(14px); opacity: 0; }
+}
+@keyframes v3-shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+.v3-scope .v3-marquee { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.v3-scope .v3-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: v3-marquee var(--marquee-speed, 44s) linear infinite;
+}
+.v3-scope .v3-marquee:hover .v3-marquee-track { animation-play-state: paused; }
+.v3-scope .v3-pulse { animation: v3-pulse 3s ease-in-out infinite; }
+.v3-scope .v3-blink { animation: v3-blink 1.6s steps(1) infinite; }
+.v3-scope .v3-float { animation: v3-float 5s ease-in-out infinite; }
+.v3-scope .v3-scroll-hint { animation: v3-scroll-hint 1.9s var(--ease-inout) infinite; }
+.v3-scope .v3-shimmer {
+  background: linear-gradient(100deg, transparent 30%, color-mix(in oklab, var(--foreground) 9%, transparent) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: v3-shimmer 2.4s linear infinite;
+}
+
+.v3-scope .v3-lift {
+  transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out), border-color 0.25s ease;
+}
+.v3-scope .v3-lift:hover { transform: translateY(-5px); }
+
+/* Custom scrollbar inside the scope */
+.v3-scope ::-webkit-scrollbar { width: 10px; height: 10px; }
+.v3-scope ::-webkit-scrollbar-thumb { background: var(--v3-hairline-strong); border-radius: 999px; }
+.v3-scope ::-webkit-scrollbar-track { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-scope *,
+  .v3-scope *::before,
+  .v3-scope *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
