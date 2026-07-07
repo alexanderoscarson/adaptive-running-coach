@@ -17,9 +17,21 @@ export interface RaceResult {
   seconds: number;
 }
 
-/** "48:30" → 2910, "1:45:00" → 6300, "45" → 2700. Null when unparseable. */
+/** "48:30" → 2910, "1:45:00" → 6300, "45" → 2700. Also accepts bare digits
+ *  ("4830" → 48:30, "14500" → 1:45:00) since mobile numeric keyboards have no
+ *  colon key. Null when unparseable. */
 export function parseTimeToSeconds(raw: string): number | null {
-  const parts = raw.trim().split(":");
+  const trimmed = raw.trim();
+  // Digits only → read the last two as seconds, the two before as minutes.
+  if (/^\d{3,6}$/.test(trimmed)) {
+    const sec = Number(trimmed.slice(-2));
+    const min = Number(trimmed.slice(-4, -2));
+    const hour = Number(trimmed.slice(0, -4) || 0);
+    if (sec > 59 || min > 59) return null;
+    const total = hour * 3600 + min * 60 + sec;
+    return total > 0 ? total : null;
+  }
+  const parts = trimmed.split(":");
   if (parts.length === 0 || parts.length > 3) return null;
   if (parts.some((p) => p === "" || !/^\d+$/.test(p))) return null;
   const nums = parts.map(Number);

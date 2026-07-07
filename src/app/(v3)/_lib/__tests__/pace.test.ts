@@ -18,6 +18,13 @@ describe("parseTimeToSeconds", () => {
     expect(parseTimeToSeconds("45")).toBe(2700);
   });
 
+  it("parses colon-free digits (mobile numeric keyboards have no colon)", () => {
+    expect(parseTimeToSeconds("4830")).toBe(2910); // 48:30
+    expect(parseTimeToSeconds("14500")).toBe(6300); // 1:45:00
+    expect(parseTimeToSeconds("830")).toBe(510); // 8:30
+    expect(parseTimeToSeconds("4880")).toBeNull(); // 80 seconds is not a thing
+  });
+
   it("rejects malformed input", () => {
     expect(parseTimeToSeconds("4:75")).toBeNull();
     expect(parseTimeToSeconds("abc")).toBeNull();

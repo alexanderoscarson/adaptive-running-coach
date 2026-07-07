@@ -43,8 +43,8 @@ export function parseRaceResult(
 
 function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-3">
-      <span className="text-sm font-bold uppercase tracking-wider">{children}</span>
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+      <span className="shrink-0 text-sm font-bold uppercase tracking-wider">{children}</span>
       {hint && <span className="v3-mono text-xs text-[var(--muted-foreground)]">{hint}</span>}
     </div>
   );

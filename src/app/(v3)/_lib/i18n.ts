@@ -130,6 +130,26 @@ const sv: Dict = {
   "ob.gen.error.retry": "Försök igen",
   "ob.gen.error.adjust": "Justera mina val",
 
+  /* ---- Account & save ---- */
+  "ob.acc.eyebrow": "Sista steget",
+  "ob.acc.title": "Skapa konto & spara planen",
+  "ob.acc.sub": "Planen sparas på ditt konto och öppnas i appen — följ den vecka för vecka, pass för pass.",
+  "ob.acc.signinEyebrow": "Välkommen tillbaka",
+  "ob.acc.signinTitle": "Logga in",
+  "ob.acc.signinSub": "Logga in för att öppna din sparade plan.",
+  "ob.acc.name": "Namn",
+  "ob.acc.email": "E-post",
+  "ob.acc.password": "Lösenord (minst 6 tecken)",
+  "ob.acc.cta": "Skapa konto & spara",
+  "ob.acc.signinCta": "Logga in",
+  "ob.acc.toSignin": "Har du redan konto? Logga in",
+  "ob.acc.toSignup": "Nytt här? Skapa konto",
+  "ob.acc.saving": "Sparar din plan…",
+  "ob.acc.savingSub": "Planen genereras och sparas på ditt konto.",
+  "ob.acc.confirmEmail": "Kolla din mejl och bekräfta kontot, logga sedan in.",
+  "ob.acc.error": "Något gick fel. Försök igen.",
+  "ob.acc.offline": "Servern går inte att nå just nu. Försök igen om en stund.",
+
   /* ---- Plan preview (the wow) ---- */
   "prev.eyebrow": "Din plan är klar",
   "prev.headline.pre": "Vägen till",
@@ -170,7 +190,6 @@ const sv: Dict = {
   "prev.session.distance": "distans",
   "prev.km": "km",
   "prev.cta": "Skapa konto & spara planen",
-  "prev.cta.note": "Konto & sparning kopplas i steg 2 — planen ovan är på riktigt.",
   "prev.restart": "Börja om med ett annat lopp",
 
   "sessiontype.easy": "Lugnt",
@@ -216,7 +235,8 @@ const sv: Dict = {
   "mock.real":
     "PÅ RIKTIGT: loppkatalogen och planen genereras live av Parrots riktiga motor — periodisering, pacezoner och passlogik enligt specen, genom samma kvalitetsgrindar som appen.",
   "mock.date": "MOCK: loppdatumet sätts till den 15:e i loppmånaden — riktiga datum kopplas senare.",
-  "mock.persist": "MOCK: inget sparas — konto och Supabase kopplas i steg 2.",
+  "mock.persistReal":
+    "PÅ RIKTIGT: skapar du konto sparas planen på din profil och öppnas i appen — samma motor och databas som skarpa appen.",
   "mock.sport":
     "MOCK: för cykel/skidor/sim illustrerar löpmotorn planen. Multisport-motorn är ett senare steg.",
   "mock.threshold": "MOCK: din tröskel uppskattas från erfarenhet + volym, inte från klock- eller HRV-data.",
@@ -348,6 +368,25 @@ const en: Dict = {
   "ob.gen.error.retry": "Try again",
   "ob.gen.error.adjust": "Adjust my choices",
 
+  "ob.acc.eyebrow": "Last step",
+  "ob.acc.title": "Create account & save the plan",
+  "ob.acc.sub": "The plan is saved to your account and opens in the app — follow it week by week, session by session.",
+  "ob.acc.signinEyebrow": "Welcome back",
+  "ob.acc.signinTitle": "Sign in",
+  "ob.acc.signinSub": "Sign in to open your saved plan.",
+  "ob.acc.name": "Name",
+  "ob.acc.email": "Email",
+  "ob.acc.password": "Password (min 6 characters)",
+  "ob.acc.cta": "Create account & save",
+  "ob.acc.signinCta": "Sign in",
+  "ob.acc.toSignin": "Already have an account? Sign in",
+  "ob.acc.toSignup": "New here? Create account",
+  "ob.acc.saving": "Saving your plan…",
+  "ob.acc.savingSub": "The plan is being generated and saved to your account.",
+  "ob.acc.confirmEmail": "Check your email to confirm your account, then sign in.",
+  "ob.acc.error": "Something went wrong. Please try again.",
+  "ob.acc.offline": "The server can't be reached right now. Try again in a moment.",
+
   "prev.eyebrow": "Your plan is ready",
   "prev.headline.pre": "The road to",
   "prev.days": "days to go",
@@ -387,7 +426,6 @@ const en: Dict = {
   "prev.session.distance": "distance",
   "prev.km": "km",
   "prev.cta": "Create account & save the plan",
-  "prev.cta.note": "Account & saving arrive in step 2 — the plan above is real.",
   "prev.restart": "Start over with another race",
 
   "sessiontype.easy": "Easy",
@@ -431,7 +469,8 @@ const en: Dict = {
   "mock.real":
     "REAL: the race catalog and the plan are generated live by Parrot's actual engine — periodization, pace zones and session logic per the spec, through the same quality gates as the app.",
   "mock.date": "MOCK: the race date is set to the 15th of the race month — real dates come later.",
-  "mock.persist": "MOCK: nothing is saved — account and Supabase are wired in step 2.",
+  "mock.persistReal":
+    "REAL: create an account and the plan is saved to your profile and opens in the app — same engine and database as the live app.",
   "mock.sport": "MOCK: for cycling/skiing/swimming the running engine illustrates the plan. Multi-sport is a later step.",
   "mock.threshold": "MOCK: your threshold is estimated from experience + volume, not from watch or HRV data.",
   "mock.thresholdReal":

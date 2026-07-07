@@ -16,10 +16,18 @@ import { RacePicker } from "../../_components/race-picker";
 import { ProfileStep, parseRaceResult, type ProfileValue } from "../../_components/profile-step";
 import { Generating } from "../../_components/generating";
 import { PlanPreview } from "../../_components/plan-preview";
+import { AccountStep } from "../../_components/account-step";
 
-type Step = "race" | "you" | "generating" | "preview" | "error";
+type Step = "race" | "you" | "generating" | "preview" | "account" | "error";
 
-const STEP_INDEX: Record<Step, number> = { race: 0, you: 1, generating: 2, preview: 2, error: 2 };
+const STEP_INDEX: Record<Step, number> = {
+  race: 0,
+  you: 1,
+  generating: 2,
+  preview: 2,
+  account: 2,
+  error: 2,
+};
 
 function ProgressRail({ step, onBack }: { step: Step; onBack: (() => void) | null }) {
   const { t } = useV3I18n();
@@ -161,6 +169,7 @@ function OnboardingInner() {
   const back = useCallback(() => {
     if (step === "you") setStep("race");
     else if (step === "error") setStep("you");
+    else if (step === "account") setStep("preview");
   }, [step]);
 
   const restart = useCallback(() => {
@@ -172,7 +181,10 @@ function OnboardingInner() {
 
   return (
     <div className="min-h-dvh">
-      <ProgressRail step={step} onBack={step === "you" || step === "error" ? back : null} />
+      <ProgressRail
+        step={step}
+        onBack={step === "you" || step === "error" || step === "account" ? back : null}
+      />
 
       <AnimatePresence mode="wait">
         <motion.main
@@ -208,8 +220,20 @@ function OnboardingInner() {
 
           {step === "preview" && race && result && (
             <div className="pt-8">
-              <PlanPreview race={race} result={result} onRestart={restart} />
+              <PlanPreview
+                race={race}
+                result={result}
+                onRestart={restart}
+                onSave={() => {
+                  window.scrollTo({ top: 0 });
+                  setStep("account");
+                }}
+              />
             </div>
+          )}
+
+          {step === "account" && race && (
+            <AccountStep input={{ race, ...profile, raceResult: parseRaceResult(profile) }} />
           )}
 
           {step === "error" && (

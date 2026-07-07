@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Flag, Info, RotateCcw } from "lucide-react";
 import type { Race } from "@/lib/races";
@@ -351,7 +351,7 @@ function MockPanel({ race, result }: { race: Race; result: PreviewResult }) {
   const items = [
     { real: true, text: t("mock.real") },
     { real: false, text: t("mock.date") },
-    { real: false, text: t("mock.persist") },
+    { real: true, text: t("mock.persistReal") },
     ...(race.sport !== "running" ? [{ real: false, text: t("mock.sport") }] : []),
     result.raceResult
       ? { real: true, text: t("mock.thresholdReal") }
@@ -391,13 +391,14 @@ export function PlanPreview({
   race,
   result,
   onRestart,
+  onSave,
 }: {
   race: Race;
   result: PreviewResult;
   onRestart: () => void;
+  onSave: () => void;
 }) {
   const { t, lang } = useV3I18n();
-  const [ctaNote, setCtaNote] = useState(false);
   const days = daysUntil(result.raceDate);
 
   const stats = [
@@ -546,21 +547,10 @@ export function PlanPreview({
       {/* CTA */}
       <Reveal>
         <div className="mt-16 flex flex-col items-center gap-4 text-center">
-          <button type="button" className="v3-btn v3-btn-primary !px-9 !py-4 !text-base" onClick={() => setCtaNote(true)}>
+          <button type="button" className="v3-btn v3-btn-primary !px-9 !py-4 !text-base" onClick={onSave}>
             {t("prev.cta")}
             <ArrowRight className="size-4" />
           </button>
-          <div aria-live="polite" className="min-h-5">
-            {ctaNote && (
-              <motion.p
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="v3-mono text-xs text-[var(--v3-ember)]"
-              >
-                {t("prev.cta.note")}
-              </motion.p>
-            )}
-          </div>
           <button
             type="button"
             onClick={onRestart}
