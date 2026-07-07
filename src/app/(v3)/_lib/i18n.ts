@@ -16,10 +16,10 @@ const sv: Dict = {
   "nav.lang": "Byt språk",
 
   "hero.eyebrow": "Din AI-coach mot ett riktigt lopp",
-  "hero.title.a": "Loppet",
-  "hero.title.b": "är hjälten",
+  "hero.title.a": "Ditt lopp.",
+  "hero.title.b": "Din plan.",
   "hero.sub":
-    "Inte \"spring 10 km\". Utan Vasaloppet. Vätternrundan. Ditt första femkilometers, ditt tionde maraton. Parrot bygger varje pass mot terrängen, formatet och dagen som betyder allt — och planen lever med dig hela vägen fram.",
+    "Vasaloppet, Vätternrundan, ditt första femkilometers eller ditt tionde maraton. Parrot bygger träningsschemat efter loppet du valt — distansen, terrängen och datumet — och anpassar det vecka för vecka hela vägen till start.",
   "hero.cta.primary": "Hitta ditt lopp",
   "hero.cta.secondary": "Se hur det funkar",
   "hero.scroll": "Skrolla",
@@ -34,42 +34,42 @@ const sv: Dict = {
   "marquee.label": "Byggd för svenska klassiker — och allt däremellan",
 
   "races.eyebrow": "Svensk Klassiker",
-  "races.title": "Fyra lopp. En ära.",
+  "races.title": "Fyra lopp. En klassiker.",
   "races.sub":
-    "Generiska distansmål bygger generiska planer. Parrot förankrar varje vecka i loppet du faktiskt ska göra — spåret, vattnet, backarna, folkhavet.",
+    "Ett schema mot ett allmänt distansmål ser likadant ut för alla. När du tränar mot ett riktigt lopp kan varje vecka byggas efter spåret, vattnet och backarna du faktiskt kommer möta.",
   "races.klassiker": "En del av En Svensk Klassiker",
   "races.pick": "Träna mot detta lopp",
   "races.more.title": "…och hela katalogen",
   "races.more.sub": "Storlopp i Europa och världen, stafetter, swimrun, triathlon. Eller ditt allra första lopp.",
   "races.more.cta": "Bläddra bland alla lopp",
 
-  "philosophy.eyebrow": "Varför lopp-först",
-  "philosophy.title": "En plan som vet vart den är på väg",
+  "philosophy.eyebrow": "Varför ett riktigt lopp",
+  "philosophy.title": "Därför utgår allt från loppet",
   "philosophy.1.title": "Terrängen formar passen",
   "philosophy.1.body":
-    "Nio mil i Vasaloppets spår kräver något helt annat än ett platt stadsmaraton. Backarna i Lidingöloppet likaså. Planen vet skillnaden — och tränar dig för den.",
+    "Nio mil i Vasaloppets spår kräver något annat än ett platt stadsmaraton, och Lidingöloppets backar något annat än asfalt. Schemat byggs efter just det du anmält dig till.",
   "philosophy.2.title": "Formatet sätter rytmen",
   "philosophy.2.body":
-    "Masstart i natten, öppet vatten, intervallstart. Periodiseringen byggs mot dagens verkliga krav — bas, bygg, peak och nedtrappning som landar exakt på loppdagen.",
-  "philosophy.3.title": "Dagen driver dig",
+    "Masstart i natten, öppet vatten eller intervallstart — träningen periodiseras mot loppdagens krav, med bas, bygg, peak och nedtrappning som landar rätt på datumet.",
+  "philosophy.3.title": "Ett datum att sikta på",
   "philosophy.3.body":
-    "Ett datum i kalendern gör något med motivationen som \"bli piggare\" aldrig gör. Varje pass vet varför det finns — och säger det till dig.",
+    "Ett datum i kalendern gör mer för motivationen än ett vagt mål. Varje pass har en tydlig roll på vägen dit, och du ser hela upplägget från dag ett.",
 
   "how.eyebrow": "Så funkar det",
   "how.title": "Från soffan till startlinjen",
   "how.1.title": "Välj ditt lopp",
   "how.1.body": "Svenska klassiker, europeiska storlopp — eller ditt allra första femkilometers.",
   "how.2.title": "Berätta om dig",
-  "how.2.body": "Erfarenhet, dagar i veckan, nuläge. Fyra frågor, under en minut.",
+  "how.2.body": "Erfarenhet, senaste race-tid, dagar i veckan. Tar under en minut.",
   "how.3.title": "Se planen ta form",
   "how.3.body": "En periodiserad plan från idag till mållinjen — med konkret pace i varje pass.",
   "how.cta": "Testa nu — det är gratis",
 
   "finalcta.eyebrow": "Redo?",
   "finalcta.title": "Ditt lopp väntar.",
-  "finalcta.sub": "Välj det. Se hela vägen dit ta form på under en minut.",
+  "finalcta.sub": "Välj det och se planen ta form på under en minut.",
   "finalcta.button": "Hitta ditt lopp",
-  "footer.tagline": "Loppet är hjälten.",
+  "footer.tagline": "Från anmälan till mållinje.",
   "footer.note": "v3 · Steg 1 — landningssida & onboarding. Byggd ovanpå Parrots riktiga planmotor.",
 
   /* ---- Onboarding ---- */
@@ -82,8 +82,8 @@ const sv: Dict = {
   "ob.generate": "Bygg min plan",
 
   "ob.race.eyebrow": "Steg 1 av 2",
-  "ob.race.title": "Vilket lopp drömmer du om?",
-  "ob.race.sub": "Det här blir hjärtat i hela din plan.",
+  "ob.race.title": "Vilket lopp siktar du på?",
+  "ob.race.sub": "Hela schemat byggs utifrån det.",
   "ob.race.search": "Sök lopp, stad eller land…",
   "ob.race.klassiker": "Svensk Klassiker",
   "ob.race.all": "Alla",
@@ -92,7 +92,7 @@ const sv: Dict = {
 
   "ob.you.eyebrow": "Steg 2 av 2",
   "ob.you.title": "Berätta om dig",
-  "ob.you.sub": "Fyra snabba frågor — så vi kan förankra din pace och din vecka.",
+  "ob.you.sub": "Några snabba frågor, så hamnar tempo och veckoupplägg rätt från början.",
   "ob.you.exp": "Hur van är du?",
   "ob.you.exp.beginner": "Nybörjare",
   "ob.you.exp.beginner.d": "Bygger grunden. Gå-pauser är en metod, inte ett misslyckande.",
@@ -120,7 +120,7 @@ const sv: Dict = {
   "ob.you.summary": "{days} dagar/vecka · {km} km nuvarande volym · långpass på {day}",
 
   "ob.gen.title": "Bygger din väg till",
-  "ob.gen.anchor": "Förankrar planen i {race}",
+  "ob.gen.anchor": "Anpassar planen efter {race}",
   "ob.gen.periodize": "Periodiserar {weeks} veckor mot loppdagen",
   "ob.gen.pace": "Räknar fram dina pacezoner",
   "ob.gen.place": "Placerar passen runt ditt liv",
@@ -138,7 +138,7 @@ const sv: Dict = {
   "prev.sessions": "pass",
   "prev.threshold": "tröskeltempo",
   "prev.raceday": "loppdag",
-  "prev.journey": "Resan till mållinjen",
+  "prev.journey": "Så är planen upplagd",
   "prev.journey.today": "Idag",
   "prev.journey.race": "Loppdag",
   "prev.phase.base": "Bas",
@@ -197,7 +197,7 @@ const sv: Dict = {
   "why.recovery":
     "Aktiv återhämtning håller blodet i rörelse och gör dig redo igen snabbare. Spring riktigt lugnt — kroppen ska vila, inte tränas.",
   "why.long":
-    "Långpasset är planens motor mot {race}. Det lär kroppen att hålla ihop över distans och att bränna fett som bränsle. Jämn fart, lite återhållen.",
+    "Långpasset är veckans viktigaste pass på vägen mot {race}. Det vänjer kroppen vid att hålla ihop över distans och att använda fett som bränsle. Jämn fart, lite återhållen.",
   "why.tempo":
     "Tröskelpass höjer farten du orkar hålla länge. Du ligger precis på gränsen där mjölksyran börjar samlas — exakt den uthållighet {race} kräver.",
   "why.intervals":
@@ -235,10 +235,10 @@ const en: Dict = {
   "nav.lang": "Switch language",
 
   "hero.eyebrow": "Your AI coach toward a real race",
-  "hero.title.a": "The race",
-  "hero.title.b": "is the hero",
+  "hero.title.a": "Your race.",
+  "hero.title.b": "Your plan.",
   "hero.sub":
-    "Not \"run 10K\". But Vasaloppet. Vätternrundan. Your first 5K, your tenth marathon. Parrot builds every session toward the terrain, the format and the day that means everything — and the plan lives with you all the way there.",
+    "Vasaloppet, Vätternrundan, your first 5K or your tenth marathon. Parrot builds the training plan around the race you pick — the distance, the terrain, the date — and adjusts it week by week all the way to the start.",
   "hero.cta.primary": "Find your race",
   "hero.cta.secondary": "See how it works",
   "hero.scroll": "Scroll",
@@ -253,42 +253,42 @@ const en: Dict = {
   "marquee.label": "Built for the Swedish classics — and everything in between",
 
   "races.eyebrow": "Svensk Klassiker",
-  "races.title": "Four races. One honour.",
+  "races.title": "Four races. One classic.",
   "races.sub":
-    "Generic distance goals build generic plans. Parrot anchors every week in the race you'll actually do — the track, the water, the hills, the crowds.",
+    "A plan toward a generic distance goal looks the same for everyone. Training for a real race means every week can be built around the track, the water and the hills you'll actually face.",
   "races.klassiker": "Part of En Svensk Klassiker",
   "races.pick": "Train for this race",
   "races.more.title": "…and the whole catalog",
   "races.more.sub": "European majors, relays, swimrun, triathlon. Or your very first race.",
   "races.more.cta": "Browse all races",
 
-  "philosophy.eyebrow": "Why race-first",
-  "philosophy.title": "A plan that knows where it's going",
+  "philosophy.eyebrow": "Why a real race",
+  "philosophy.title": "Why everything starts with the race",
   "philosophy.1.title": "Terrain shapes the sessions",
   "philosophy.1.body":
-    "90 km in the Vasaloppet track demands something entirely different from a flat city marathon. So do the Lidingöloppet hills. The plan knows the difference — and trains you for it.",
+    "90 km in the Vasaloppet track demands something different from a flat city marathon, and the Lidingöloppet hills something different from tarmac. The plan is built for exactly what you signed up for.",
   "philosophy.2.title": "Format sets the rhythm",
   "philosophy.2.body":
-    "Mass start at night, open water, time trial. Periodization is built toward the day's real demands — base, build, peak and taper landing exactly on race day.",
-  "philosophy.3.title": "The day drives you",
+    "Night mass start, open water or time trial — training is periodized toward race-day demands, with base, build, peak and taper landing right on the date.",
+  "philosophy.3.title": "A date to aim for",
   "philosophy.3.body":
-    "A date in the calendar does something to motivation that \"get fitter\" never will. Every session knows why it exists — and tells you.",
+    "A date in the calendar does more for motivation than a vague goal. Every session has a clear role on the way there, and you see the whole plan from day one.",
 
   "how.eyebrow": "How it works",
   "how.title": "From the couch to the start line",
   "how.1.title": "Choose your race",
   "how.1.body": "Swedish classics, European majors — or your very first 5K.",
   "how.2.title": "Tell us about you",
-  "how.2.body": "Experience, days per week, where you're at. Four questions, under a minute.",
+  "how.2.body": "Experience, latest race time, days per week. Takes under a minute.",
   "how.3.title": "Watch the plan take shape",
   "how.3.body": "A periodized plan from today to the finish line — concrete pace in every session.",
   "how.cta": "Try it now — it's free",
 
   "finalcta.eyebrow": "Ready?",
   "finalcta.title": "Your race is waiting.",
-  "finalcta.sub": "Pick it. Watch the whole road there take shape in under a minute.",
+  "finalcta.sub": "Pick it and watch the plan take shape in under a minute.",
   "finalcta.button": "Find your race",
-  "footer.tagline": "The race is the hero.",
+  "footer.tagline": "From sign-up to finish line.",
   "footer.note": "v3 · Step 1 — landing & onboarding. Built on Parrot's real plan engine.",
 
   "ob.progress.race": "Race",
@@ -300,8 +300,8 @@ const en: Dict = {
   "ob.generate": "Build my plan",
 
   "ob.race.eyebrow": "Step 1 of 2",
-  "ob.race.title": "Which race do you dream about?",
-  "ob.race.sub": "This becomes the heart of your entire plan.",
+  "ob.race.title": "Which race are you aiming for?",
+  "ob.race.sub": "The whole plan is built around it.",
   "ob.race.search": "Search race, city or country…",
   "ob.race.klassiker": "Svensk Klassiker",
   "ob.race.all": "All",
@@ -310,7 +310,7 @@ const en: Dict = {
 
   "ob.you.eyebrow": "Step 2 of 2",
   "ob.you.title": "Tell us about you",
-  "ob.you.sub": "Four quick questions — so we can anchor your pace and your week.",
+  "ob.you.sub": "A few quick questions so your paces and weekly setup start out right.",
   "ob.you.exp": "How experienced are you?",
   "ob.you.exp.beginner": "Beginner",
   "ob.you.exp.beginner.d": "Building the base. Walk breaks are a method, not a failure.",
@@ -338,7 +338,7 @@ const en: Dict = {
   "ob.you.summary": "{days} days/week · {km} km current volume · long run on {day}",
 
   "ob.gen.title": "Building your road to",
-  "ob.gen.anchor": "Anchoring the plan in {race}",
+  "ob.gen.anchor": "Tailoring the plan to {race}",
   "ob.gen.periodize": "Periodizing {weeks} weeks toward race day",
   "ob.gen.pace": "Computing your pace zones",
   "ob.gen.place": "Placing sessions around your life",
@@ -355,7 +355,7 @@ const en: Dict = {
   "prev.sessions": "sessions",
   "prev.threshold": "threshold pace",
   "prev.raceday": "race day",
-  "prev.journey": "The journey to the finish line",
+  "prev.journey": "How your plan is laid out",
   "prev.journey.today": "Today",
   "prev.journey.race": "Race day",
   "prev.phase.base": "Base",
@@ -414,7 +414,7 @@ const en: Dict = {
   "why.recovery":
     "Active recovery keeps the blood moving and gets you back to ready faster. Run genuinely easy — the body should rest, not train.",
   "why.long":
-    "The long run is the engine of your plan toward {race}. It teaches the body to hold together over distance and to burn fat as fuel. Steady, slightly held back.",
+    "The long run is the most important session of the week on the way to {race}. It teaches your body to hold together over distance and to use fat for fuel. Steady, slightly held back.",
   "why.tempo":
     "Threshold work lifts the pace you can hold for a long time. You sit right at the edge where lactate starts to build — exactly the endurance {race} demands.",
   "why.intervals":

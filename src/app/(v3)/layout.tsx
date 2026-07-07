@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./v3.css";
 
 export const metadata: Metadata = {
-  title: "Parrot — Från start till mål i ditt lopp",
+  title: "Parrot — träna mot ett riktigt lopp",
   description:
-    "AI-coachen som bygger hela din träningsresa runt ett riktigt lopp — Vasaloppet, Vätternrundan, ditt första 5 km eller ditt tionde maraton.",
+    "Välj ett lopp — Vasaloppet, Vätternrundan, ditt första 5 km eller ditt tionde maraton — och få ett träningsschema som byggs efter det, hela vägen till start.",
 };
 
 export default function V3Layout({
