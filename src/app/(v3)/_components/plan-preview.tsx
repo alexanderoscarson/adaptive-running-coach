@@ -9,6 +9,7 @@ import type { PlannedSession, WeekPlan } from "@/lib/plan-generator";
 import { formatPace } from "@/lib/plan-generator";
 import { useV3I18n, type Language } from "../_lib/i18n";
 import { daysUntil, formatDayLabel, formatRaceDate, raceTexture } from "../_lib/race-meta";
+import { formatTime } from "../_lib/pace";
 import type { PreviewResult } from "../_lib/preview-plan";
 import { CountUp, EASE, Reveal, SplitWords, Stagger, StaggerItem } from "./motion";
 import { CourseProfile } from "./course-profile";
@@ -56,7 +57,7 @@ function PhaseJourney({ result }: { result: PreviewResult }) {
   // The engine caps plans at 24 weeks, so week 1 may start later than today —
   // label the left edge with the real start date when it does.
   const planStart = new Date(result.weeks[0].startsOn);
-  const startsNow = planStart.getTime() - Date.now() < 10 * 86400000;
+  const startsNow = daysUntil(planStart) < 10;
   const startLabel = startsNow ? t("prev.journey.today") : formatDayLabel(planStart, lang);
 
   return (
@@ -345,14 +346,17 @@ function SessionDetail({ result, race, lang }: { result: PreviewResult; race: Ra
 
 /* ------------------------------------------------------------- mock panel */
 
-function MockPanel({ race }: { race: Race }) {
+function MockPanel({ race, result }: { race: Race; result: PreviewResult }) {
   const { t } = useV3I18n();
   const items = [
     { real: true, text: t("mock.real") },
     { real: false, text: t("mock.date") },
     { real: false, text: t("mock.persist") },
     ...(race.sport !== "running" ? [{ real: false, text: t("mock.sport") }] : []),
-    { real: false, text: t("mock.threshold") },
+    result.raceResult
+      ? { real: true, text: t("mock.thresholdReal") }
+      : { real: false, text: t("mock.threshold") },
+    ...(result.goalPace ? [{ real: false, text: t("mock.goalpace") }] : []),
     { real: false, text: t("mock.profiles") },
   ];
   return (
@@ -437,7 +441,11 @@ export function PlanPreview({
 
       {/* stat band */}
       <Reveal delay={0.1}>
-        <dl className="v3-card mt-8 grid grid-cols-2 divide-[var(--v3-hairline)] sm:grid-cols-4 sm:divide-x">
+        <dl
+          className={`v3-card mt-8 grid grid-cols-2 divide-[var(--v3-hairline)] sm:divide-x ${
+            result.goalPace ? "sm:grid-cols-5" : "sm:grid-cols-4"
+          }`}
+        >
           {stats.map((s) => (
             <div key={s.label} className="p-5 text-center">
               <dd className="v3-mono text-3xl font-bold sm:text-4xl" style={{ color: s.accent ?? "var(--foreground)" }}>
@@ -457,7 +465,32 @@ export function PlanPreview({
               {t("prev.threshold")}
             </dt>
           </div>
+          {result.goalPace && (
+            <div className="p-5 text-center">
+              <dd className="v3-mono text-3xl font-bold text-[var(--v3-ember)] sm:text-4xl">
+                ~{formatPace(result.goalPace.paceMinKm)}
+                <span className="text-sm font-normal text-[var(--muted-foreground)]"> /km</span>
+              </dd>
+              <dt className="v3-mono mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+                {t("prev.goalpace")} · {t("prev.goalpace.finish", { time: formatTime(result.goalPace.finishSeconds) })}
+              </dt>
+            </div>
+          )}
         </dl>
+      </Reveal>
+
+      {/* what the paces are anchored in */}
+      <Reveal delay={0.16}>
+        <p className="v3-mono mt-4 text-center text-[11px] leading-relaxed tracking-[0.04em] text-[var(--muted-foreground)]">
+          <span aria-hidden>ⓘ </span>
+          {result.raceResult
+            ? t("prev.basis.result", {
+                threshold: result.thresholdPaceLabel,
+                dist: t(`dist.${result.raceResult.distance}`),
+                time: formatTime(result.raceResult.seconds),
+              })
+            : t("prev.basis.estimate", { threshold: result.thresholdPaceLabel })}
+        </p>
       </Reveal>
 
       {/* journey */}
@@ -542,7 +575,7 @@ export function PlanPreview({
       {/* honesty panel */}
       <Reveal>
         <div className="mt-16">
-          <MockPanel race={race} />
+          <MockPanel race={race} result={result} />
         </div>
       </Reveal>
     </div>

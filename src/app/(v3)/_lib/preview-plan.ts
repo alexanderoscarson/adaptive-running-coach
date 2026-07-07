@@ -2,6 +2,7 @@ import type { Race } from "@/lib/races";
 import type { UserProfile, Goal } from "@/types/database";
 import type { WeekPlan } from "@/lib/plan-generator";
 import { distanceToRaceDistance } from "./race-meta";
+import type { GoalPacePrediction, RaceResult } from "./pace";
 
 export type ExperienceTier = "beginner" | "intermediate" | "advanced" | "elite";
 
@@ -11,6 +12,8 @@ export interface PreviewInput {
   daysPerWeek: number;
   weeklyKm: number;
   longRunDay: number; // 0..6
+  /** Most recent race result — the engine's preferred threshold anchor. */
+  raceResult: RaceResult | null;
 }
 
 export interface PhaseSegment {
@@ -25,6 +28,10 @@ export interface PreviewResult {
   phases: PhaseSegment[];
   thresholdPaceLabel: string; // e.g. "5:10"
   totalSessions: number;
+  /** What the paces are anchored in: the entered race result, or null (tier estimate). */
+  raceResult: RaceResult | null;
+  /** Predicted race-day pace + finish (running races only). */
+  goalPace: GoalPacePrediction | null;
 }
 
 /* Reasonable default weekly volume per experience tier (km/week), used to seed
@@ -87,8 +94,11 @@ export function buildProfile(input: PreviewInput): UserProfile {
   };
 }
 
-/** Maps the chosen race + computed window onto the generator's real Goal in-type. */
+/** Maps the chosen race + computed window onto the generator's real Goal in-type.
+ *  A provided race result lands in the matching baseline field, which the
+ *  engine's threshold ladder picks up as its preferred (priority 1) anchor. */
 export function buildGoal(input: PreviewInput, raceDate: Date, planWeeks: number): Goal {
+  const r = input.raceResult;
   return {
     id: "preview",
     user_id: "preview",
@@ -96,10 +106,10 @@ export function buildGoal(input: PreviewInput, raceDate: Date, planWeeks: number
     race_distance: distanceToRaceDistance(input.race.distanceKm),
     target_time_seconds: null,
     race_date: raceDate.toISOString(),
-    baseline_5k_seconds: null,
-    baseline_10k_seconds: null,
-    baseline_half_seconds: null,
-    baseline_marathon_seconds: null,
+    baseline_5k_seconds: r?.distance === "5k" ? r.seconds : null,
+    baseline_10k_seconds: r?.distance === "10k" ? r.seconds : null,
+    baseline_half_seconds: r?.distance === "half_marathon" ? r.seconds : null,
+    baseline_marathon_seconds: r?.distance === "marathon" ? r.seconds : null,
     plan_weeks: planWeeks,
     active: true,
     created_at: new Date().toISOString(),

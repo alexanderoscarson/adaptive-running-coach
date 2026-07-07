@@ -13,7 +13,7 @@ import { TIER_DEFAULT_KM, type PreviewResult } from "../../_lib/preview-plan";
 import { EASE } from "../../_components/motion";
 import { Wordmark } from "../../_components/topbar";
 import { RacePicker } from "../../_components/race-picker";
-import { ProfileStep, type ProfileValue } from "../../_components/profile-step";
+import { ProfileStep, parseRaceResult, type ProfileValue } from "../../_components/profile-step";
 import { Generating } from "../../_components/generating";
 import { PlanPreview } from "../../_components/plan-preview";
 
@@ -126,6 +126,8 @@ function OnboardingInner() {
     daysPerWeek: 3,
     weeklyKm: TIER_DEFAULT_KM.intermediate,
     longRunDay: 6,
+    resultDistance: null,
+    resultTime: "",
   });
   const [result, setResult] = useState<PreviewResult | null>(null);
   const [failures, setFailures] = useState<string[]>([]);
@@ -143,8 +145,9 @@ function OnboardingInner() {
   const generate = useCallback(() => {
     if (!race) return;
     // The engine is pure & synchronous — compute up front, let the
-    // Generating stage sequence play, then reveal.
-    const gen = generateValidatedPlan({ race, ...profile });
+    // Generating stage sequence play, then reveal. An invalid/absent race
+    // time falls back to the tier estimate (the engine's own ladder).
+    const gen = generateValidatedPlan({ race, ...profile, raceResult: parseRaceResult(profile) });
     if (gen.ok) {
       setResult(gen.result);
       setFailures([]);

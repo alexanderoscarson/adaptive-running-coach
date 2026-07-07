@@ -102,6 +102,16 @@ const sv: Dict = {
   "ob.you.exp.advanced.d": "Strukturerad träning på måldistansen.",
   "ob.you.exp.elite": "Elit",
   "ob.you.exp.elite.d": "Lång och gedigen träningsbakgrund.",
+  "ob.you.result": "Din senaste race-tid",
+  "ob.you.result.sub": "Frivilligt men rekommenderat — alla tempon i planen förankras i den.",
+  "ob.you.result.none": "Har ingen än",
+  "ob.you.result.time": "Din tid",
+  "ob.you.result.pace": "= {pace} /km snitt",
+  "ob.you.result.invalid": "Ogiltig tid — skriv t.ex. {example}",
+  "dist.5k": "5 km",
+  "dist.10k": "10 km",
+  "dist.half_marathon": "Halvmaraton",
+  "dist.marathon": "Maraton",
   "ob.you.days": "Dagar per vecka du kan träna",
   "ob.you.days.unit": "dagar",
   "ob.you.volume": "Hur mycket rör du dig nu?",
@@ -141,6 +151,11 @@ const sv: Dict = {
   "prev.phase.peak.d": "Loppspecifik fart",
   "prev.phase.taper.d": "Vila in formen",
   "prev.phase.race.d": "Dagen D",
+  "prev.goalpace": "Beräknat lopptempo",
+  "prev.goalpace.finish": "målgång ~{time}",
+  "prev.basis.result": "Alla tempon i planen utgår från ditt tröskeltempo {threshold} /km — härlett ur din {dist}-tid {time}.",
+  "prev.basis.estimate":
+    "Alla tempon i planen utgår från ditt tröskeltempo {threshold} /km — uppskattat från erfarenhet och veckovolym. Lägg in en race-tid för skarpare pace.",
   "prev.volume": "Veckovolym",
   "prev.volume.sub": "km per vecka · återhämtningsveckor markerade",
   "prev.volume.recovery": "återhämtning",
@@ -205,6 +220,9 @@ const sv: Dict = {
   "mock.sport":
     "MOCK: för cykel/skidor/sim illustrerar löpmotorn planen. Multisport-motorn är ett senare steg.",
   "mock.threshold": "MOCK: din tröskel uppskattas från erfarenhet + volym, inte från klock- eller HRV-data.",
+  "mock.thresholdReal":
+    "PÅ RIKTIGT: tröskeln och alla tempon härleds ur race-tiden du angav — motorns förstahandsval enligt specen.",
+  "mock.goalpace": "OBS: lopptempot är en uppskattning (Riegels formel), inte ett löfte.",
   "mock.profiles": "MOCK: bansprofilerna är stiliserade silhuetter, inte exakta höjddata.",
 };
 
@@ -302,6 +320,16 @@ const en: Dict = {
   "ob.you.exp.advanced.d": "Structured training at the target distance.",
   "ob.you.exp.elite": "Elite",
   "ob.you.exp.elite.d": "Long, deep training history.",
+  "ob.you.result": "Your most recent race time",
+  "ob.you.result.sub": "Optional but recommended — every pace in the plan is anchored to it.",
+  "ob.you.result.none": "None yet",
+  "ob.you.result.time": "Your time",
+  "ob.you.result.pace": "= {pace} /km average",
+  "ob.you.result.invalid": "Invalid time — try e.g. {example}",
+  "dist.5k": "5K",
+  "dist.10k": "10K",
+  "dist.half_marathon": "Half marathon",
+  "dist.marathon": "Marathon",
   "ob.you.days": "Days per week you can train",
   "ob.you.days.unit": "days",
   "ob.you.volume": "How much do you move now?",
@@ -340,6 +368,11 @@ const en: Dict = {
   "prev.phase.peak.d": "Race-specific speed",
   "prev.phase.taper.d": "Rest into form",
   "prev.phase.race.d": "The day",
+  "prev.goalpace": "Predicted race pace",
+  "prev.goalpace.finish": "finish ~{time}",
+  "prev.basis.result": "Every pace in the plan is derived from your threshold pace {threshold} /km — anchored in your {dist} time of {time}.",
+  "prev.basis.estimate":
+    "Every pace in the plan is derived from your threshold pace {threshold} /km — estimated from experience and volume. Enter a race time for sharper pacing.",
   "prev.volume": "Weekly volume",
   "prev.volume.sub": "km per week · recovery weeks marked",
   "prev.volume.recovery": "recovery",
@@ -401,6 +434,9 @@ const en: Dict = {
   "mock.persist": "MOCK: nothing is saved — account and Supabase are wired in step 2.",
   "mock.sport": "MOCK: for cycling/skiing/swimming the running engine illustrates the plan. Multi-sport is a later step.",
   "mock.threshold": "MOCK: your threshold is estimated from experience + volume, not from watch or HRV data.",
+  "mock.thresholdReal":
+    "REAL: the threshold and every pace are derived from the race time you entered — the engine's first-choice anchor per the spec.",
+  "mock.goalpace": "NOTE: the race pace is an estimate (Riegel's formula), not a promise.",
   "mock.profiles": "MOCK: the course profiles are stylized silhouettes, not exact elevation data.",
 };
 

@@ -13,6 +13,7 @@ import {
   type PreviewResult,
 } from "./preview-plan";
 import { nextRaceDate, weeksUntil, clampPlanWeeks } from "./race-meta";
+import { predictGoalPace } from "./pace";
 
 /* ============================================================================
    VALIDATED GENERATION CORE — the single path the v3 surface uses to turn
@@ -69,6 +70,13 @@ export function generateValidatedPlan(input: PreviewInput): PlanGenResult {
 
   const thresholdPace = deriveThresholdPace(goal, profile);
 
+  // Race-day pace indication for running races. For other sports the running
+  // engine only illustrates the plan, so a /km prediction would mislead.
+  const goalPace =
+    input.race.sport === "running"
+      ? predictGoalPace(input.race.distanceKm, thresholdPace, input.raceResult)
+      : null;
+
   return {
     ok: true,
     corrections,
@@ -79,6 +87,8 @@ export function generateValidatedPlan(input: PreviewInput): PlanGenResult {
       phases: summarizePhases(weeks),
       thresholdPaceLabel: formatPace(thresholdPace),
       totalSessions: weeks.reduce((n, w) => n + w.sessions.length, 0),
+      raceResult: input.raceResult,
+      goalPace,
     },
   };
 }
