@@ -84,8 +84,15 @@ export function AccountStep({ input }: { input: PreviewInput }) {
       });
       if (err) throw new Error(err.message);
       if (!data.session) {
-        // Email confirmation required — can't persist until confirmed.
-        setError(t("ob.acc.confirmEmail"));
+        // Existing confirmed account: Supabase anti-enumeration returns a
+        // ghost user with no identities and sends no email — say so plainly.
+        if (data.user && (data.user.identities?.length ?? 0) === 0) {
+          setMode("signin");
+          setError(t("ob.acc.exists"));
+        } else {
+          // Genuinely new account — email confirmation required.
+          setError(t("ob.acc.confirmEmail"));
+        }
         setBusy(false);
         return;
       }

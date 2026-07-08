@@ -36,7 +36,7 @@ const sv: Dict = {
   "races.eyebrow": "Svensk Klassiker",
   "races.title": "Fyra lopp. En klassiker.",
   "races.sub":
-    "Ett schema mot ett allmänt distansmål ser likadant ut för alla. När du tränar mot ett riktigt lopp kan varje vecka byggas efter spåret, vattnet och backarna du faktiskt kommer möta.",
+    "Planen är personlig från start — din nivå, din vecka, ditt tempo. Med ett riktigt lopp som mål byggs den dessutom efter spåret, vattnet och backarna du faktiskt kommer möta.",
   "races.klassiker": "En del av En Svensk Klassiker",
   "races.pick": "Träna mot detta lopp",
   "races.more.title": "…och hela katalogen",
@@ -147,6 +147,7 @@ const sv: Dict = {
   "ob.acc.saving": "Sparar din plan…",
   "ob.acc.savingSub": "Planen genereras och sparas på ditt konto.",
   "ob.acc.confirmEmail": "Kolla din mejl och bekräfta kontot, logga sedan in.",
+  "ob.acc.exists": "Det finns redan ett konto med den här e-posten — logga in istället.",
   "ob.acc.error": "Något gick fel. Försök igen.",
   "ob.acc.offline": "Servern går inte att nå just nu. Försök igen om en stund.",
 
@@ -275,7 +276,7 @@ const en: Dict = {
   "races.eyebrow": "Svensk Klassiker",
   "races.title": "Four races. One classic.",
   "races.sub":
-    "A plan toward a generic distance goal looks the same for everyone. Training for a real race means every week can be built around the track, the water and the hills you'll actually face.",
+    "Your plan is personal from the start — your level, your week, your paces. Aim it at a real race and it's also built around the track, the water and the hills you'll actually face.",
   "races.klassiker": "Part of En Svensk Klassiker",
   "races.pick": "Train for this race",
   "races.more.title": "…and the whole catalog",
@@ -384,6 +385,7 @@ const en: Dict = {
   "ob.acc.saving": "Saving your plan…",
   "ob.acc.savingSub": "The plan is being generated and saved to your account.",
   "ob.acc.confirmEmail": "Check your email to confirm your account, then sign in.",
+  "ob.acc.exists": "There's already an account with this email — sign in instead.",
   "ob.acc.error": "Something went wrong. Please try again.",
   "ob.acc.offline": "The server can't be reached right now. Try again in a moment.",
 
