@@ -10,6 +10,13 @@ import { formatPace } from "@/lib/plan-generator";
 import { useV3I18n, type Language } from "../_lib/i18n";
 import { daysUntil, formatDayLabel, formatRaceDate, raceTexture } from "../_lib/race-meta";
 import { formatTime } from "../_lib/pace";
+import {
+  DEDICATED_SPORTS,
+  anchorOptionLabel,
+  formatSportDistance,
+  formatThresholdValue,
+  sportTarget,
+} from "../_lib/sport";
 import type { PreviewResult } from "../_lib/preview-plan";
 import { CountUp, EASE, Reveal, SplitWords, Stagger, StaggerItem } from "./motion";
 import { CourseProfile } from "./course-profile";
@@ -45,7 +52,10 @@ const BLOCK_LABEL: Record<string, { sv: string; en: string }> = {
   recovery: { sv: "Vila", en: "Recovery" },
 };
 
-function paceLabel(s: PlannedSession): string | null {
+/** The session's headline effort: sport-native target (W / per 100 m / ski
+ *  pace) when a dedicated sport threshold exists, otherwise the run pace. */
+function targetLabel(s: PlannedSession, result: PreviewResult): string | null {
+  if (result.sportThreshold) return sportTarget(result.sportThreshold, s.type)?.label ?? null;
   return s.targetPaceMinKm ? `${formatPace(s.targetPaceMinKm)} /km` : null;
 }
 
@@ -222,11 +232,11 @@ function FirstWeek({ result, lang }: { result: PreviewResult; lang: Language }) 
                         {t(`sessiontype.${s.type}`)}
                       </span>
                       {/* Pace-first (spec hard rule): the pace is the headline number */}
-                      {paceLabel(s) && (
-                        <div className="v3-mono mt-1.5 text-sm font-bold">{paceLabel(s)}</div>
+                      {targetLabel(s, result) && (
+                        <div className="v3-mono mt-1.5 text-sm font-bold">{targetLabel(s, result)}</div>
                       )}
                       <div className="v3-mono mt-0.5 text-[11px] text-[var(--muted-foreground)]">
-                        {s.distanceKm ? `${s.distanceKm} ${t("prev.km")}` : null}
+                        {s.distanceKm ? formatSportDistance(result.sport, s.distanceKm, lang) : null}
                         {s.distanceKm && s.durationMinutes ? " · " : null}
                         {s.durationMinutes ? `${s.durationMinutes} min` : null}
                       </div>
@@ -282,9 +292,9 @@ function SessionDetail({ result, race, lang }: { result: PreviewResult; race: Ra
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted-foreground)]">{session.description}</p>
 
         <div className="v3-mono mt-5 flex flex-wrap gap-6 text-sm">
-          {paceLabel(session) && (
+          {targetLabel(session, result) && (
             <div>
-              <div className="text-xl font-bold text-[var(--v3-cyan)]">{paceLabel(session)}</div>
+              <div className="text-xl font-bold text-[var(--v3-cyan)]">{targetLabel(session, result)}</div>
               <div className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
                 {t("prev.session.pace")}
               </div>
@@ -301,7 +311,7 @@ function SessionDetail({ result, race, lang }: { result: PreviewResult; race: Ra
           {session.distanceKm && (
             <div>
               <div className="text-xl font-bold">
-                {session.distanceKm} {t("prev.km")}
+                {formatSportDistance(result.sport, session.distanceKm, lang)}
               </div>
               <div className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
                 {t("prev.session.distance")}
@@ -348,15 +358,17 @@ function SessionDetail({ result, race, lang }: { result: PreviewResult; race: Ra
 
 function MockPanel({ race, result }: { race: Race; result: PreviewResult }) {
   const { t } = useV3I18n();
+  const dedicated = DEDICATED_SPORTS.includes(race.sport);
   const items = [
     { real: true, text: t("mock.real") },
     { real: false, text: t("mock.date") },
-    { real: true, text: t("mock.persistReal") },
-    ...(race.sport !== "running" ? [{ real: false, text: t("mock.sport") }] : []),
-    result.raceResult
+    dedicated ? { real: false, text: t("mock.persistSport") } : { real: true, text: t("mock.persistReal") },
+    ...(dedicated ? [{ real: false, text: t("mock.sportConvert") }] : []),
+    ...(!dedicated && race.sport !== "running" ? [{ real: false, text: t("mock.sport") }] : []),
+    (result.sportThreshold ? result.sportThreshold.fromResult : Boolean(result.raceResult))
       ? { real: true, text: t("mock.thresholdReal") }
       : { real: false, text: t("mock.threshold") },
-    ...(result.goalPace ? [{ real: false, text: t("mock.goalpace") }] : []),
+    ...(result.goalPace || result.sportGoal ? [{ real: false, text: t("mock.goalpace") }] : []),
     { real: false, text: t("mock.profiles") },
   ];
   return (
@@ -444,7 +456,7 @@ export function PlanPreview({
       <Reveal delay={0.1}>
         <dl
           className={`v3-card mt-8 grid grid-cols-2 divide-[var(--v3-hairline)] sm:divide-x ${
-            result.goalPace ? "sm:grid-cols-5" : "sm:grid-cols-4"
+            result.goalPace || result.sportGoal ? "sm:grid-cols-5" : "sm:grid-cols-4"
           }`}
         >
           {stats.map((s) => (
@@ -459,11 +471,19 @@ export function PlanPreview({
           ))}
           <div className="p-5 text-center">
             <dd className="v3-mono text-3xl font-bold text-[var(--v3-cyan)] sm:text-4xl">
-              {result.thresholdPaceLabel}
-              <span className="text-sm font-normal text-[var(--muted-foreground)]"> /km</span>
+              {result.sportThreshold
+                ? formatThresholdValue(result.sportThreshold.kind, result.sportThreshold.value)
+                : result.thresholdPaceLabel}
+              {!result.sportThreshold && (
+                <span className="text-sm font-normal text-[var(--muted-foreground)]"> /km</span>
+              )}
             </dd>
             <dt className="v3-mono mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-              {t("prev.threshold")}
+              {result.sportThreshold?.kind === "power"
+                ? t("prev.threshold.power")
+                : result.sportThreshold?.kind === "css"
+                  ? t("prev.threshold.css")
+                  : t("prev.threshold")}
             </dt>
           </div>
           {result.goalPace && (
@@ -477,20 +497,47 @@ export function PlanPreview({
               </dt>
             </div>
           )}
+          {result.sportGoal && result.sportThreshold && (
+            <div className="p-5 text-center">
+              <dd className="v3-mono text-3xl font-bold text-[var(--v3-ember)] sm:text-4xl">
+                ~{formatThresholdValue(result.sportThreshold.kind, result.sportGoal.value)}
+              </dd>
+              <dt className="v3-mono mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+                {t("prev.goalpace")}
+                {result.sportGoal.finishSeconds
+                  ? ` · ${t("prev.goalpace.finish", { time: formatTime(result.sportGoal.finishSeconds) })}`
+                  : ""}
+              </dt>
+            </div>
+          )}
         </dl>
       </Reveal>
 
-      {/* what the paces are anchored in */}
+      {/* what the levels are anchored in */}
       <Reveal delay={0.16}>
         <p className="v3-mono mt-4 text-center text-[11px] leading-relaxed tracking-[0.04em] text-[var(--muted-foreground)]">
           <span aria-hidden>ⓘ </span>
-          {result.raceResult
-            ? t("prev.basis.result", {
-                threshold: result.thresholdPaceLabel,
-                dist: t(`dist.${result.raceResult.distance}`),
-                time: formatTime(result.raceResult.seconds),
-              })
-            : t("prev.basis.estimate", { threshold: result.thresholdPaceLabel })}
+          {result.sportThreshold
+            ? result.sportThreshold.fromResult && result.sportAnchor
+              ? result.sportThreshold.kind === "power"
+                ? t("prev.basis.sport.ftp", {
+                    threshold: formatThresholdValue("power", result.sportThreshold.value),
+                  })
+                : t("prev.basis.sport.time", {
+                    threshold: formatThresholdValue(result.sportThreshold.kind, result.sportThreshold.value),
+                    dist: anchorOptionLabel(result.sport, result.sportAnchor.key, lang),
+                    time: formatTime(result.sportAnchor.seconds ?? 0),
+                  })
+              : t("prev.basis.sport.estimate", {
+                  threshold: formatThresholdValue(result.sportThreshold.kind, result.sportThreshold.value),
+                })
+            : result.raceResult
+              ? t("prev.basis.result", {
+                  threshold: result.thresholdPaceLabel,
+                  dist: t(`dist.${result.raceResult.distance}`),
+                  time: formatTime(result.raceResult.seconds),
+                })
+              : t("prev.basis.estimate", { threshold: result.thresholdPaceLabel })}
         </p>
       </Reveal>
 

@@ -9,6 +9,7 @@ const BASE_INPUT = {
   daysPerWeek: 3,
   weeklyKm: 28,
   longRunDay: 6,
+  sportAnchor: null,
 };
 
 describe("parseTimeToSeconds", () => {

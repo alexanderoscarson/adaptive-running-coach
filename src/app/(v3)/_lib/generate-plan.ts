@@ -14,6 +14,8 @@ import {
 } from "./preview-plan";
 import { nextRaceDate, weeksUntil, clampPlanWeeks } from "./race-meta";
 import { predictGoalPace } from "./pace";
+import { DEDICATED_SPORTS, deriveSportThreshold, predictSportGoal } from "./sport";
+import { transformWeeksForSport } from "./sport-plan";
 
 /* ============================================================================
    VALIDATED GENERATION CORE — the single path the v3 surface uses to turn
@@ -69,26 +71,37 @@ export function generateValidatedPlan(input: PreviewInput): PlanGenResult {
   if (failures.length > 0) return { ok: false, failures };
 
   const thresholdPace = deriveThresholdPace(goal, profile);
+  const sport = input.race.sport;
 
-  // Race-day pace indication for running races. For other sports the running
-  // engine only illustrates the plan, so a /km prediction would mislead.
+  // Race-day pace indication for running races.
   const goalPace =
-    input.race.sport === "running"
-      ? predictGoalPace(input.race.distanceKm, thresholdPace, input.raceResult)
-      : null;
+    sport === "running" ? predictGoalPace(input.race.distanceKm, thresholdPace, input.raceResult) : null;
+
+  // Dedicated sport layer: swim/bike/ski get their own threshold (CSS / FTP /
+  // ski pace) and the weeks are rewritten into the sport's units. The
+  // validated periodization itself is shared (spec §1's unifying model).
+  const sportThreshold = DEDICATED_SPORTS.includes(sport)
+    ? deriveSportThreshold(sport, input.experience, input.sportAnchor)
+    : null;
+  const finalWeeks = sportThreshold ? transformWeeksForSport(weeks, sport, sportThreshold) : weeks;
+  const sportGoal = sportThreshold ? predictSportGoal(sport, sportThreshold, input.race.distanceKm) : null;
 
   return {
     ok: true,
     corrections,
     result: {
-      weeks,
-      planWeeks: weeks.length,
+      weeks: finalWeeks,
+      planWeeks: finalWeeks.length,
       raceDate,
-      phases: summarizePhases(weeks),
+      phases: summarizePhases(finalWeeks),
       thresholdPaceLabel: formatPace(thresholdPace),
-      totalSessions: weeks.reduce((n, w) => n + w.sessions.length, 0),
+      totalSessions: finalWeeks.reduce((n, w) => n + w.sessions.length, 0),
       raceResult: input.raceResult,
       goalPace,
+      sport,
+      sportThreshold,
+      sportAnchor: sportThreshold?.fromResult ? input.sportAnchor : null,
+      sportGoal,
     },
   };
 }

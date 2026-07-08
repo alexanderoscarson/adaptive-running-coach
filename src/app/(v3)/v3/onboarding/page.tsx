@@ -13,7 +13,13 @@ import { TIER_DEFAULT_KM, type PreviewResult } from "../../_lib/preview-plan";
 import { EASE } from "../../_components/motion";
 import { Wordmark } from "../../_components/topbar";
 import { RacePicker } from "../../_components/race-picker";
-import { ProfileStep, parseRaceResult, type ProfileValue } from "../../_components/profile-step";
+import {
+  ProfileStep,
+  parseRaceResult,
+  parseSportAnchor,
+  type ProfileValue,
+} from "../../_components/profile-step";
+import { volumeConfig } from "../../_lib/sport";
 import { Generating } from "../../_components/generating";
 import { PlanPreview } from "../../_components/plan-preview";
 import { AccountStep } from "../../_components/account-step";
@@ -132,13 +138,31 @@ function OnboardingInner() {
   const [profile, setProfile] = useState<ProfileValue>({
     experience: "intermediate",
     daysPerWeek: 3,
-    weeklyKm: TIER_DEFAULT_KM.intermediate,
+    weeklyKm: deepLinkedRace
+      ? volumeConfig(deepLinkedRace.sport).tierDefault.intermediate
+      : TIER_DEFAULT_KM.intermediate,
     longRunDay: 6,
     resultDistance: null,
     resultTime: "",
+    sportAnchorKey: null,
+    sportAnchorValue: "",
   });
   const [result, setResult] = useState<PreviewResult | null>(null);
   const [failures, setFailures] = useState<string[]>([]);
+
+  /** The engine speaks run-equivalent km; anchors are parsed per sport. */
+  const buildInput = useCallback(
+    (r: Race) => ({
+      race: r,
+      experience: profile.experience,
+      daysPerWeek: profile.daysPerWeek,
+      weeklyKm: Math.round(volumeConfig(r.sport).toRunKm(profile.weeklyKm)),
+      longRunDay: profile.longRunDay,
+      raceResult: parseRaceResult(profile),
+      sportAnchor: parseSportAnchor(r.sport, profile),
+    }),
+    [profile]
+  );
 
   const planWeeks = useMemo(
     () => (race ? clampPlanWeeks(weeksUntil(nextRaceDate(race.month))) : 0),
@@ -147,15 +171,23 @@ function OnboardingInner() {
 
   const selectRace = useCallback((r: Race) => {
     setRace(r);
-    setProfile((p) => ({ ...p, weeklyKm: TIER_DEFAULT_KM[p.experience] }));
+    // Volume scale + anchor question follow the sport — reset both.
+    setProfile((p) => ({
+      ...p,
+      weeklyKm: volumeConfig(r.sport).tierDefault[p.experience],
+      resultDistance: null,
+      resultTime: "",
+      sportAnchorKey: null,
+      sportAnchorValue: "",
+    }));
   }, []);
 
   const generate = useCallback(() => {
     if (!race) return;
     // The engine is pure & synchronous — compute up front, let the
-    // Generating stage sequence play, then reveal. An invalid/absent race
-    // time falls back to the tier estimate (the engine's own ladder).
-    const gen = generateValidatedPlan({ race, ...profile, raceResult: parseRaceResult(profile) });
+    // Generating stage sequence play, then reveal. An invalid/absent
+    // anchor falls back to the tier estimate (the engine's own ladder).
+    const gen = generateValidatedPlan(buildInput(race));
     if (gen.ok) {
       setResult(gen.result);
       setFailures([]);
@@ -164,7 +196,7 @@ function OnboardingInner() {
       setFailures(gen.failures);
     }
     setStep("generating");
-  }, [race, profile]);
+  }, [race, buildInput]);
 
   const back = useCallback(() => {
     if (step === "you") setStep("race");
@@ -206,7 +238,7 @@ function OnboardingInner() {
                 <span className="text-[var(--muted-foreground)]">{t("ob.race.selected")}:</span>
                 <span className="font-bold text-[var(--v3-electric-bright)]">{race.name}</span>
               </div>
-              <ProfileStep value={profile} onChange={setProfile} />
+              <ProfileStep sport={race.sport} value={profile} onChange={setProfile} />
             </StepShell>
           )}
 
@@ -232,9 +264,7 @@ function OnboardingInner() {
             </div>
           )}
 
-          {step === "account" && race && (
-            <AccountStep input={{ race, ...profile, raceResult: parseRaceResult(profile) }} />
-          )}
+          {step === "account" && race && <AccountStep input={buildInput(race)} />}
 
           {step === "error" && (
             <div className="mx-auto flex min-h-[60dvh] max-w-md flex-col items-center justify-center px-5 text-center">

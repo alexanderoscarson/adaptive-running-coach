@@ -24,7 +24,7 @@ const sv: Dict = {
   "hero.cta.secondary": "Se hur det funkar",
   "hero.scroll": "Skrolla",
   "hero.stat.races": "lopp i katalogen",
-  "hero.stat.weeks": "veckors periodisering",
+  "hero.stat.weeks": "veckor · schema vecka för vecka mot ditt lopp",
   "hero.stat.pace": "konkret pace i varje pass",
   "hero.stage.days": "dagar kvar",
   "hero.stage.distance": "distans",
@@ -112,6 +112,14 @@ const sv: Dict = {
   "dist.10k": "10 km",
   "dist.half_marathon": "Halvmaraton",
   "dist.marathon": "Maraton",
+  "ob.you.result.swimming": "Din senaste simtid",
+  "ob.you.result.swimming.sub": "Vi räknar fram din CSS — tröskelfarten per 100 m som allt utgår från.",
+  "ob.you.result.xc_skiing": "Din senaste skidtid",
+  "ob.you.result.xc_skiing.sub": "Tröskelfarten i spåret härleds ur loppet — allt i planen utgår från den.",
+  "ob.you.result.cycling": "Din tröskeleffekt (FTP)",
+  "ob.you.result.cycling.sub": "Vet du din FTP från test eller Zwift? Annars uppskattar vi från erfarenhet.",
+  "ob.you.result.watts": "Watt",
+  "ob.you.result.thresholdFeedback": "≈ {value}",
   "ob.you.days": "Dagar per vecka du kan träna",
   "ob.you.days.unit": "dagar",
   "ob.you.volume": "Hur mycket rör du dig nu?",
@@ -174,6 +182,13 @@ const sv: Dict = {
   "prev.phase.race.d": "Dagen D",
   "prev.goalpace": "Beräknat lopptempo",
   "prev.goalpace.finish": "målgång ~{time}",
+  "prev.threshold.power": "FTP · tröskeleffekt",
+  "prev.threshold.css": "CSS · tröskel /100 m",
+  "prev.basis.sport.time":
+    "Alla nivåer i planen utgår från tröskeln {threshold} — härledd ur din {dist}-tid {time}.",
+  "prev.basis.sport.ftp": "Alla nivåer i planen utgår från din angivna FTP {threshold}.",
+  "prev.basis.sport.estimate":
+    "Alla nivåer i planen utgår från tröskeln {threshold} — uppskattad från erfarenhet och volym. Lägg in en tid eller FTP för skarpare nivåer.",
   "prev.basis.result": "Alla tempon i planen utgår från ditt tröskeltempo {threshold} /km — härlett ur din {dist}-tid {time}.",
   "prev.basis.estimate":
     "Alla tempon i planen utgår från ditt tröskeltempo {threshold} /km — uppskattat från erfarenhet och veckovolym. Lägg in en race-tid för skarpare pace.",
@@ -239,7 +254,11 @@ const sv: Dict = {
   "mock.persistReal":
     "PÅ RIKTIGT: skapar du konto sparas planen på din profil och öppnas i appen — samma motor och databas som skarpa appen.",
   "mock.sport":
-    "MOCK: för cykel/skidor/sim illustrerar löpmotorn planen. Multisport-motorn är ett senare steg.",
+    "MOCK: för triathlon/swimrun illustrerar löpmotorn planen. Multisport-kombinationer är ett senare steg.",
+  "mock.sportConvert":
+    "OBS: distanser och nivåer räknas om från den gemensamma uthållighetsmodellen med schablonfaktorer per sport — känns ett pass fel, justera efter känsla.",
+  "mock.persistSport":
+    "MOCK: sparningen lagrar planen i löp-ekvivalenta enheter för denna sport — sport-native sparning i appen är nästa steg.",
   "mock.threshold": "MOCK: din tröskel uppskattas från erfarenhet + volym, inte från klock- eller HRV-data.",
   "mock.thresholdReal":
     "PÅ RIKTIGT: tröskeln och alla tempon härleds ur race-tiden du angav — motorns förstahandsval enligt specen.",
@@ -264,7 +283,7 @@ const en: Dict = {
   "hero.cta.secondary": "See how it works",
   "hero.scroll": "Scroll",
   "hero.stat.races": "races in the catalog",
-  "hero.stat.weeks": "weeks of periodization",
+  "hero.stat.weeks": "weeks · a week-by-week schedule for your race",
   "hero.stat.pace": "concrete pace in every session",
   "hero.stage.days": "days to go",
   "hero.stage.distance": "distance",
@@ -351,6 +370,14 @@ const en: Dict = {
   "dist.10k": "10K",
   "dist.half_marathon": "Half marathon",
   "dist.marathon": "Marathon",
+  "ob.you.result.swimming": "Your latest swim time",
+  "ob.you.result.swimming.sub": "We derive your CSS — the threshold pace per 100 m everything builds on.",
+  "ob.you.result.xc_skiing": "Your latest ski race time",
+  "ob.you.result.xc_skiing.sub": "Your threshold pace on skis is derived from the race — every level builds on it.",
+  "ob.you.result.cycling": "Your threshold power (FTP)",
+  "ob.you.result.cycling.sub": "Know your FTP from a test or Zwift? Otherwise we estimate from experience.",
+  "ob.you.result.watts": "Watts",
+  "ob.you.result.thresholdFeedback": "≈ {value}",
   "ob.you.days": "Days per week you can train",
   "ob.you.days.unit": "days",
   "ob.you.volume": "How much do you move now?",
@@ -411,6 +438,13 @@ const en: Dict = {
   "prev.phase.race.d": "The day",
   "prev.goalpace": "Predicted race pace",
   "prev.goalpace.finish": "finish ~{time}",
+  "prev.threshold.power": "FTP · threshold power",
+  "prev.threshold.css": "CSS · threshold /100 m",
+  "prev.basis.sport.time":
+    "Every level in the plan is derived from the threshold {threshold} — anchored in your {dist} time of {time}.",
+  "prev.basis.sport.ftp": "Every level in the plan is derived from your entered FTP {threshold}.",
+  "prev.basis.sport.estimate":
+    "Every level in the plan is derived from the threshold {threshold} — estimated from experience and volume. Enter a time or FTP for sharper levels.",
   "prev.basis.result": "Every pace in the plan is derived from your threshold pace {threshold} /km — anchored in your {dist} time of {time}.",
   "prev.basis.estimate":
     "Every pace in the plan is derived from your threshold pace {threshold} /km — estimated from experience and volume. Enter a race time for sharper pacing.",
@@ -473,7 +507,11 @@ const en: Dict = {
   "mock.date": "MOCK: the race date is set to the 15th of the race month — real dates come later.",
   "mock.persistReal":
     "REAL: create an account and the plan is saved to your profile and opens in the app — same engine and database as the live app.",
-  "mock.sport": "MOCK: for cycling/skiing/swimming the running engine illustrates the plan. Multi-sport is a later step.",
+  "mock.sport": "MOCK: for triathlon/swimrun the running engine illustrates the plan. Multi-sport combinations are a later step.",
+  "mock.sportConvert":
+    "NOTE: distances and levels are converted from the shared endurance model using per-sport factors — if a session feels off, adjust by feel.",
+  "mock.persistSport":
+    "MOCK: saving stores the plan in run-equivalent units for this sport — sport-native saving in the app is the next step.",
   "mock.threshold": "MOCK: your threshold is estimated from experience + volume, not from watch or HRV data.",
   "mock.thresholdReal":
     "REAL: the threshold and every pace are derived from the race time you entered — the engine's first-choice anchor per the spec.",

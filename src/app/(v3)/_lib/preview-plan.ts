@@ -1,8 +1,9 @@
-import type { Race } from "@/lib/races";
+import type { Race, Sport } from "@/lib/races";
 import type { UserProfile, Goal } from "@/types/database";
 import type { WeekPlan } from "@/lib/plan-generator";
 import { distanceToRaceDistance } from "./race-meta";
 import type { GoalPacePrediction, RaceResult } from "./pace";
+import type { SportAnchorInput, SportGoal, SportThreshold } from "./sport";
 
 export type ExperienceTier = "beginner" | "intermediate" | "advanced" | "elite";
 
@@ -10,10 +11,14 @@ export interface PreviewInput {
   race: Race;
   experience: ExperienceTier;
   daysPerWeek: number;
+  /** Run-equivalent weekly km (the engine's currency). Sport surfaces convert
+   *  their native volume before building this input. */
   weeklyKm: number;
   longRunDay: number; // 0..6
-  /** Most recent race result — the engine's preferred threshold anchor. */
+  /** Most recent running race result — the engine's preferred threshold anchor. */
   raceResult: RaceResult | null;
+  /** Sport-native anchor for swimming/cycling/xc skiing (time or FTP). */
+  sportAnchor: SportAnchorInput | null;
 }
 
 export interface PhaseSegment {
@@ -26,12 +31,21 @@ export interface PreviewResult {
   planWeeks: number;
   raceDate: Date;
   phases: PhaseSegment[];
-  thresholdPaceLabel: string; // e.g. "5:10"
+  thresholdPaceLabel: string; // e.g. "5:10" (running)
   totalSessions: number;
   /** What the paces are anchored in: the entered race result, or null (tier estimate). */
   raceResult: RaceResult | null;
   /** Predicted race-day pace + finish (running races only). */
   goalPace: GoalPacePrediction | null;
+
+  /* ---- sport layer (swimming / cycling / xc skiing) ---- */
+  sport: Sport;
+  /** Sport-native threshold (FTP / CSS / ski pace); null for running & non-dedicated sports. */
+  sportThreshold: SportThreshold | null;
+  /** Echo of the entered sport anchor, for the "what this builds on" line. */
+  sportAnchor: SportAnchorInput | null;
+  /** Predicted race-day effort in sport units (swim/ski). */
+  sportGoal: SportGoal | null;
 }
 
 /* Reasonable default weekly volume per experience tier (km/week), used to seed
