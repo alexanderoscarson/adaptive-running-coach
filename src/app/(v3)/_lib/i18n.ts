@@ -246,6 +246,36 @@ const sv: Dict = {
     "Alternativ träning ger aerob effekt utan stötarna. Perfekt extra volym utan ökad skaderisk.",
   "why.rest": "Vila är när träningen landar. Hoppa inte över den — det är här formen byggs.",
 
+  /* ---- Smoke test: campaign pages + paid door ---- */
+  "kampanj.klassiker.h": "En plan. Fyra lopp. En Svensk Klassiker.",
+  "kampanj.klassiker.sub":
+    "Parrot är din tränare för hela Klassikern – skidor, cykel, simning och löpning i ett enda upplägg som anpassar sig efter ditt liv.",
+  "kampanj.klassiker.cta": "Börja med ditt första lopp",
+  "kampanj.lopp.h": "Anmäld till ett lopp? Nu börjar det roliga.",
+  "kampanj.lopp.sub":
+    "Parrot bygger ditt träningsprogram för exakt det lopp du anmält dig till – banan, terrängen och datumet. Inte en generisk mall.",
+  "kampanj.lopp.cta": "Hitta ditt lopp",
+  "kampanj.coach.h": "En AI-tränare. På svenska. På riktigt.",
+  "kampanj.coach.sub":
+    "Ett personligt träningsprogram som anpassar sig efter din form, din vardag och dina mål – inte tvärtom.",
+  "kampanj.coach.cta": "Skapa din plan",
+  "kampanj.lopp.teaser": "Några av loppen i katalogen",
+
+  "paid.title": "Starta din plan",
+  "paid.price": "99 kr/mån · avsluta när du vill",
+  "paid.cta": "Starta din plan",
+  "paid.waitlistLink": "Ställ dig i kön",
+
+  "queue.title": "Parrot öppnar snart för de första användarna.",
+  "queue.email": "E-post",
+  "queue.race": "Vilket lopp tränar du inför? (frivilligt)",
+  "queue.cta": "Ställ mig först i kön",
+  "queue.confirm.title": "Du står i kön!",
+  "queue.confirm.body": "Vi hör av oss när det är din tur. Din plan väntar på dig.",
+  "queue.error": "Något gick fel. Försök igen.",
+  "queue.invalidEmail": "Skriv en giltig e-postadress.",
+  "queue.back": "Till startsidan",
+
   /* ---- Mock disclosure ---- */
   "mock.title": "Vad som är på riktigt vs. mockat",
   "mock.real":
@@ -500,6 +530,35 @@ const en: Dict = {
   "why.race": "This is the day everything pointed toward. Trust the plan, start controlled, save something for the end.",
   "why.cross_training": "Cross-training adds aerobic work without the impact. Perfect extra volume without extra injury risk.",
   "why.rest": "Rest is when the training lands. Don't skip it — this is where fitness is built.",
+
+  "kampanj.klassiker.h": "One plan. Four races. A Swedish Classic.",
+  "kampanj.klassiker.sub":
+    "Parrot is your coach for the whole Klassiker – skiing, cycling, swimming and running in one program that adapts to your life.",
+  "kampanj.klassiker.cta": "Start with your first race",
+  "kampanj.lopp.h": "Signed up for a race? Now the fun begins.",
+  "kampanj.lopp.sub":
+    "Parrot builds your training program for the exact race you've entered – the course, the terrain, the date. Not a generic template.",
+  "kampanj.lopp.cta": "Find your race",
+  "kampanj.coach.h": "An AI coach. In Swedish. For real.",
+  "kampanj.coach.sub":
+    "A personal training program that adapts to your fitness, your life and your goals – not the other way around.",
+  "kampanj.coach.cta": "Create your plan",
+  "kampanj.lopp.teaser": "Some of the races in the catalog",
+
+  "paid.title": "Start your plan",
+  "paid.price": "99 kr/month · cancel anytime",
+  "paid.cta": "Start your plan",
+  "paid.waitlistLink": "Join the waitlist",
+
+  "queue.title": "Parrot is opening soon for the first users.",
+  "queue.email": "Email",
+  "queue.race": "Which race are you training for? (optional)",
+  "queue.cta": "Put me first in line",
+  "queue.confirm.title": "You're in line!",
+  "queue.confirm.body": "We'll reach out when it's your turn. Your plan is waiting for you.",
+  "queue.error": "Something went wrong. Please try again.",
+  "queue.invalidEmail": "Enter a valid email address.",
+  "queue.back": "Back to the site",
 
   "mock.title": "What's real vs. mocked",
   "mock.real":

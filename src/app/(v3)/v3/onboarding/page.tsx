@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, ArrowLeft, ArrowRight, X } from "lucide-react";
@@ -20,6 +20,7 @@ import {
   type ProfileValue,
 } from "../../_components/profile-step";
 import { volumeConfig } from "../../_lib/sport";
+import { track } from "../../_lib/smoke";
 import { Generating } from "../../_components/generating";
 import { PlanPreview } from "../../_components/plan-preview";
 import { AccountStep } from "../../_components/account-step";
@@ -168,6 +169,14 @@ function OnboardingInner() {
     () => (race ? clampPlanWeeks(weeksUntil(nextRaceDate(race.month))) : 0),
     [race]
   );
+
+  // Smoke-test funnel events (fire-and-forget, deduped per session).
+  useEffect(() => {
+    track("onboarding_started", { once: true });
+  }, []);
+  useEffect(() => {
+    if (step === "preview") track("plan_preview_reached", { once: true });
+  }, [step]);
 
   const selectRace = useCallback((r: Race) => {
     setRace(r);

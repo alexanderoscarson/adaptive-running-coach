@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import Link from "next/link";
+import { useMemo, useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Flag, Info, RotateCcw } from "lucide-react";
 import type { Race } from "@/lib/races";
@@ -18,6 +19,7 @@ import {
   sportTarget,
 } from "../_lib/sport";
 import type { PreviewResult } from "../_lib/preview-plan";
+import { getSmoke, track } from "../_lib/smoke";
 import { CountUp, EASE, Reveal, SplitWords, Stagger, StaggerItem } from "./motion";
 import { CourseProfile } from "./course-profile";
 
@@ -412,6 +414,12 @@ export function PlanPreview({
 }) {
   const { t, lang } = useV3I18n();
   const days = daysUntil(result.raceDate);
+  // Hydration-safe read of the smoke-test variant (sessionStorage).
+  const isCampaignTraffic = useSyncExternalStore(
+    () => () => {},
+    () => getSmoke().variant !== "direct",
+    () => false
+  );
 
   const stats = [
     { value: days, label: t("prev.days"), accent: "var(--v3-ember)" },
@@ -591,13 +599,42 @@ export function PlanPreview({
         </Reveal>
       </section>
 
-      {/* CTA */}
+      {/* what happens next: the paid door (smoke test — nothing is charged) */}
       <Reveal>
-        <div className="mt-16 flex flex-col items-center gap-4 text-center">
-          <button type="button" className="v3-btn v3-btn-primary !px-9 !py-4 !text-base" onClick={onSave}>
-            {t("prev.cta")}
-            <ArrowRight className="size-4" />
-          </button>
+        <div className="mx-auto mt-16 max-w-md">
+          <div className="v3-card v3-glow-strong p-7 text-center">
+            <h2 className="v3-h3">{t("paid.title")}</h2>
+            <p className="v3-mono mt-2 text-sm text-[var(--muted-foreground)]">{t("paid.price")}</p>
+            <Link
+              href={`/v3/start?race=${race.id}&paid=1`}
+              onClick={() => track("paid_door_clicked")}
+              className="v3-btn v3-btn-primary mt-6 w-full !py-4 !text-base"
+            >
+              {t("paid.cta")}
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
+          <div className="mt-4 text-center">
+            <Link
+              href={`/v3/start?race=${race.id}`}
+              className="text-sm font-semibold text-[var(--muted-foreground)] underline-offset-4 transition-colors hover:text-[var(--foreground)] hover:underline"
+            >
+              {t("paid.waitlistLink")}
+            </Link>
+          </div>
+        </div>
+      </Reveal>
+
+      {/* account save stays for organic traffic only — campaign variants keep
+          paid-door intent unpolluted */}
+      <Reveal>
+        <div className="mt-10 flex flex-col items-center gap-4 text-center">
+          {!isCampaignTraffic && (
+            <button type="button" className="v3-btn v3-btn-ghost" onClick={onSave}>
+              {t("prev.cta")}
+              <ArrowRight className="size-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={onRestart}
